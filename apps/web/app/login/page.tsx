@@ -96,6 +96,7 @@ const inputStyle: CSSProperties = {
   borderRadius: 8,
   border: "1px solid var(--color-border)",
   background: "var(--color-surface)",
+  color: "var(--color-text)",
 };
 
 const buttonStyle: CSSProperties = {

@@ -225,7 +225,14 @@ function BrowseFilesPageInner() {
             placeholder={t("folderNamePlaceholder")}
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
-            style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--color-border)" }}
+            style={{
+              flex: 1,
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: "1px solid var(--color-border)",
+              background: "var(--color-bg)",
+              color: "var(--color-text)",
+            }}
           />
           <button type="submit" style={newFolderButtonStyle}>
             {t("create")}
