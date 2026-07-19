@@ -8,6 +8,7 @@ export function FileList({
   emptyMessage,
   onDeleted,
   onMove,
+  onPreview,
   selectable,
   selectedIds,
   onToggleSelect,
@@ -16,6 +17,7 @@ export function FileList({
   emptyMessage: string;
   onDeleted: (id: string) => void;
   onMove?: (file: FileMeta) => void;
+  onPreview?: (file: FileMeta) => void;
   selectable?: boolean;
   selectedIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
@@ -32,6 +34,7 @@ export function FileList({
           file={file}
           onDeleted={onDeleted}
           onMove={onMove}
+          onPreview={onPreview}
           selectable={selectable}
           selected={selectedIds?.has(file.id)}
           onToggleSelect={onToggleSelect}

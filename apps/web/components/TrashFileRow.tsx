@@ -12,10 +12,12 @@ export function TrashFileRow({
   file,
   onRestored,
   onPurged,
+  onPreview,
 }: {
   file: FileMeta;
   onRestored: (id: string) => void;
   onPurged: (id: string) => void;
+  onPreview?: (file: FileMeta) => void;
 }) {
   const { t } = useLocale();
 
@@ -42,32 +44,37 @@ export function TrashFileRow({
         border: "1px solid var(--color-border)",
       }}
     >
-      {file.hasThumbnail ? (
-        <FileThumbnail fileId={file.id} alt={file.filename} />
-      ) : (
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 8,
-            background: "var(--color-surface-hover)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 11,
-            color: "var(--color-text-muted)",
-            flexShrink: 0,
-          }}
-        >
-          {file.mimeType.split("/")[1]?.slice(0, 4).toUpperCase() ?? "FILE"}
-        </div>
-      )}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {file.filename}
-        </div>
-        <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-          {formatBytes(file.size)} · {file.uploadedBy.name}
+      <div
+        onClick={() => onPreview?.(file)}
+        style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0, cursor: onPreview ? "pointer" : "default" }}
+      >
+        {file.hasThumbnail ? (
+          <FileThumbnail fileId={file.id} alt={file.filename} />
+        ) : (
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 8,
+              background: "var(--color-surface-hover)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 11,
+              color: "var(--color-text-muted)",
+              flexShrink: 0,
+            }}
+          >
+            {file.mimeType.split("/")[1]?.slice(0, 4).toUpperCase() ?? "FILE"}
+          </div>
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {file.filename}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+            {formatBytes(file.size)} · {file.uploadedBy.name}
+          </div>
         </div>
       </div>
       <button onClick={() => handleDownload(file)} style={iconButtonStyle} aria-label={t("download")}>

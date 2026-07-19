@@ -18,6 +18,7 @@ export function FileRow({
   file,
   onDeleted,
   onMove,
+  onPreview,
   selectable,
   selected,
   onToggleSelect,
@@ -25,6 +26,7 @@ export function FileRow({
   file: FileMeta;
   onDeleted: (id: string) => void;
   onMove?: (file: FileMeta) => void;
+  onPreview?: (file: FileMeta) => void;
   selectable?: boolean;
   selected?: boolean;
   onToggleSelect?: (id: string) => void;
@@ -35,6 +37,11 @@ export function FileRow({
     if (!confirm(t("deleteConfirm"))) return;
     await apiFetch(`/api/files/${file.id}`, { method: "DELETE" });
     onDeleted(file.id);
+  }
+
+  function handleRowClick() {
+    if (selectable) onToggleSelect?.(file.id);
+    else onPreview?.(file);
   }
 
   return (
@@ -57,32 +64,37 @@ export function FileRow({
           style={{ width: 18, height: 18, flexShrink: 0, cursor: "pointer" }}
         />
       )}
-      {file.hasThumbnail ? (
-        <FileThumbnail fileId={file.id} alt={file.filename} />
-      ) : (
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 8,
-            background: "var(--color-surface-hover)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 11,
-            color: "var(--color-text-muted)",
-            flexShrink: 0,
-          }}
-        >
-          {file.mimeType.split("/")[1]?.slice(0, 4).toUpperCase() ?? "FILE"}
-        </div>
-      )}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {file.filename}
-        </div>
-        <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-          {formatBytes(file.size)} · {file.uploadedBy.name}
+      <div
+        onClick={handleRowClick}
+        style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0, cursor: "pointer" }}
+      >
+        {file.hasThumbnail ? (
+          <FileThumbnail fileId={file.id} alt={file.filename} />
+        ) : (
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 8,
+              background: "var(--color-surface-hover)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 11,
+              color: "var(--color-text-muted)",
+              flexShrink: 0,
+            }}
+          >
+            {file.mimeType.split("/")[1]?.slice(0, 4).toUpperCase() ?? "FILE"}
+          </div>
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {file.filename}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+            {formatBytes(file.size)} · {file.uploadedBy.name}
+          </div>
         </div>
       </div>
       {!selectable && (

@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { FileMeta } from "@drop/shared";
 import { useAuth } from "../../lib/auth-context";
 import { useFiles } from "../../lib/useFiles";
 import { useLocale } from "../../lib/i18n/locale-context";
 import { TrashFileRow } from "../../components/TrashFileRow";
+import { FilePreviewModal } from "../../components/FilePreviewModal";
 
 export default function TrashPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useLocale();
   const { files, loading, error, removeLocally } = useFiles(!!user, "/api/files/trash");
+  const [previewing, setPreviewing] = useState<FileMeta | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
@@ -34,9 +37,17 @@ export default function TrashPage() {
 
       <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
         {files.map((file) => (
-          <TrashFileRow key={file.id} file={file} onRestored={removeLocally} onPurged={removeLocally} />
+          <TrashFileRow
+            key={file.id}
+            file={file}
+            onRestored={removeLocally}
+            onPurged={removeLocally}
+            onPreview={setPreviewing}
+          />
         ))}
       </ul>
+
+      <FilePreviewModal file={previewing} onClose={() => setPreviewing(null)} />
     </main>
   );
 }

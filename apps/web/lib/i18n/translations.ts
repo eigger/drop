@@ -74,6 +74,12 @@ export const translations = {
   select: { ko: "선택", en: "Select" },
   selectedSuffix: { ko: "개 선택됨", en: " selected" },
   downloadSelectedZip: { ko: "다운로드 (zip)", en: "Download (zip)" },
+
+  close: { ko: "닫기", en: "Close" },
+  previewUnavailable: {
+    ko: "이 파일 형식은 미리보기를 지원하지 않습니다",
+    en: "Preview isn't available for this file type",
+  },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

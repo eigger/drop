@@ -11,6 +11,7 @@ import { useAuth } from "../../lib/auth-context";
 import { useLocale } from "../../lib/i18n/locale-context";
 import { FileList } from "../../components/FileList";
 import { MoveFileModal } from "../../components/MoveFileModal";
+import { FilePreviewModal } from "../../components/FilePreviewModal";
 import { CloseIcon } from "../../components/icons";
 
 interface ResumableUpload extends PendingUpload {
@@ -25,6 +26,7 @@ export default function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState<{ filename: string; percent: number } | null>(null);
   const [uploaded, setUploaded] = useState<FileMeta[]>([]);
   const [moving, setMoving] = useState<FileMeta | null>(null);
+  const [previewing, setPreviewing] = useState<FileMeta | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resumable, setResumable] = useState<ResumableUpload[]>([]);
@@ -162,7 +164,13 @@ export default function UploadPage() {
       {uploaded.length > 0 && (
         <>
           <h2 style={{ fontSize: 13, color: "var(--color-text-muted)", marginBottom: 8 }}>{t("uploadedJustNow")}</h2>
-          <FileList files={uploaded} emptyMessage="" onDeleted={removeFromSessionList} onMove={setMoving} />
+          <FileList
+            files={uploaded}
+            emptyMessage=""
+            onDeleted={removeFromSessionList}
+            onMove={setMoving}
+            onPreview={setPreviewing}
+          />
         </>
       )}
 
@@ -174,6 +182,7 @@ export default function UploadPage() {
           setMoving(null);
         }}
       />
+      <FilePreviewModal file={previewing} onClose={() => setPreviewing(null)} />
     </main>
   );
 }

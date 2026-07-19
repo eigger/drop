@@ -9,6 +9,7 @@ import { useSelection } from "../../lib/useSelection";
 import { useLocale } from "../../lib/i18n/locale-context";
 import { FileList } from "../../components/FileList";
 import { MoveFileModal } from "../../components/MoveFileModal";
+import { FilePreviewModal } from "../../components/FilePreviewModal";
 import { SelectionToolbar } from "../../components/SelectionToolbar";
 import { FolderIcon, CloseIcon } from "../../components/icons";
 
@@ -35,6 +36,7 @@ function BrowseFilesPageInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [moving, setMoving] = useState<FileMeta | null>(null);
+  const [previewing, setPreviewing] = useState<FileMeta | null>(null);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const selection = useSelection();
@@ -204,6 +206,7 @@ function BrowseFilesPageInner() {
             emptyMessage=""
             onDeleted={removeFileLocally}
             onMove={setMoving}
+            onPreview={setPreviewing}
             selectable={selection.active}
             selectedIds={selection.selectedIds}
             onToggleSelect={selection.toggle}
@@ -219,6 +222,7 @@ function BrowseFilesPageInner() {
           refresh();
         }}
       />
+      <FilePreviewModal file={previewing} onClose={() => setPreviewing(null)} />
     </main>
   );
 }

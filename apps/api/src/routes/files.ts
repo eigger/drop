@@ -6,7 +6,7 @@ import path from "node:path";
 import archiver from "archiver";
 import type { FastifyInstance } from "fastify";
 import type { MultipartFile } from "@fastify/multipart";
-import { uploadInitSchema, UPLOAD_CHUNK_SIZE_BYTES, moveFileSchema } from "@drop/shared";
+import { uploadInitSchema, UPLOAD_CHUNK_SIZE_BYTES, moveFileSchema, previewKindForMimeType } from "@drop/shared";
 import { prisma } from "../lib/prisma.js";
 import { generateThumbnail } from "../lib/imageProcessing.js";
 import { UPLOAD_DIR, THUMB_DIR, TEMP_DIR, FILE_SIZE_LIMIT_BYTES, deleteStoredFile, deleteThumbnail } from "../lib/uploads.js";
@@ -287,6 +287,57 @@ export async function fileRoutes(app: FastifyInstance) {
       "Content-Disposition",
       `attachment; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
     );
+    return createReadStream(filePath);
+  });
+
+  // 파일을 눌렀을 때 새 탭 다운로드 대신 바로 보여주는 용도(이미지/동영상/오디오/PDF/일반
+  // 텍스트) — /download와 달리 Content-Disposition을 inline으로 준다. 임의 업로드 파일을
+  // 그대로 렌더링하는 거라, 클라이언트가 자칭한 mimeType과 무관하게 previewKindForMimeType가
+  // "미리보기 가능"으로 허용한 종류만 inline으로 내려주고 나머지는 강제로 다운로드시킨다 —
+  // image/svg+xml(내부 <script> 실행 가능)이나 text/html 같은 걸 그대로 렌더링하면 업로드한
+  // 파일이 이 앱 오리진에서 스크립트를 실행하는 저장형 XSS가 된다. nosniff로 브라우저가
+  // Content-Type을 무시하고 다른 걸로 추측 렌더링하는 것도 막는다.
+  app.get("/:id/preview", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const file = await prisma.file.findUnique({ where: { id } });
+    if (!file) return reply.code(404).send({ error: t("fileNotFound", request.locale) });
+
+    const filePath = path.join(UPLOAD_DIR, file.storedName);
+    if (!existsSync(filePath)) {
+      return reply.code(404).send({ error: t("fileMissingOnDisk", request.locale) });
+    }
+
+    const { size } = await stat(filePath);
+    const isPreviewable = previewKindForMimeType(file.mimeType) !== "none";
+    const disposition = isPreviewable
+      ? `inline; filename*=UTF-8''${encodeURIComponent(file.filename)}`
+      : `attachment; filename*=UTF-8''${encodeURIComponent(file.filename)}`;
+
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("Content-Disposition", disposition);
+    reply.type(file.mimeType);
+
+    // Range 지원 — 특히 동영상은 이게 없으면 재생을 위해 파일 전체를 먼저 받아야 해서 탐색
+    // (seek)이 안 되고 대용량 영상은 미리보기가 사실상 불가능해진다.
+    const rangeHeader = request.headers.range;
+    const rangeMatch = rangeHeader ? /^bytes=(\d*)-(\d*)$/.exec(rangeHeader) : null;
+    if (rangeMatch) {
+      const start = rangeMatch[1] ? parseInt(rangeMatch[1], 10) : 0;
+      const end = rangeMatch[2] ? parseInt(rangeMatch[2], 10) : size - 1;
+      if (start > end || start >= size) {
+        reply.code(416);
+        reply.header("Content-Range", `bytes */${size}`);
+        return reply.send();
+      }
+      reply.code(206);
+      reply.header("Accept-Ranges", "bytes");
+      reply.header("Content-Range", `bytes ${start}-${end}/${size}`);
+      reply.header("Content-Length", end - start + 1);
+      return createReadStream(filePath, { start, end });
+    }
+
+    reply.header("Accept-Ranges", "bytes");
+    reply.header("Content-Length", size);
     return createReadStream(filePath);
   });
 

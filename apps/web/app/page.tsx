@@ -11,6 +11,7 @@ import { useSelection } from "../lib/useSelection";
 import { useLocale } from "../lib/i18n/locale-context";
 import { FileList } from "../components/FileList";
 import { MoveFileModal } from "../components/MoveFileModal";
+import { FilePreviewModal } from "../components/FilePreviewModal";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 
 const RECENT_LIMIT = 8;
@@ -21,6 +22,7 @@ export default function HomePage() {
   const { t } = useLocale();
   const { files, loading, error, removeLocally, refresh } = useFiles(!!user);
   const [moving, setMoving] = useState<FileMeta | null>(null);
+  const [previewing, setPreviewing] = useState<FileMeta | null>(null);
   const selection = useSelection();
 
   useEffect(() => {
@@ -68,6 +70,7 @@ export default function HomePage() {
           emptyMessage={t("noFiles")}
           onDeleted={removeLocally}
           onMove={setMoving}
+          onPreview={setPreviewing}
           selectable={selection.active}
           selectedIds={selection.selectedIds}
           onToggleSelect={selection.toggle}
@@ -82,6 +85,7 @@ export default function HomePage() {
           refresh();
         }}
       />
+      <FilePreviewModal file={previewing} onClose={() => setPreviewing(null)} />
     </main>
   );
 }
