@@ -220,3 +220,23 @@ a {
 .page-with-bottom-nav {
   padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0));
 }
+
+/* Hide scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Storage summary card hover effect */
+.storage-summary-card:hover {
+  background-color: var(--color-surface-hover) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.storage-summary-card:active {
+  transform: translateY(0);
+}

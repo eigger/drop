@@ -12,25 +12,39 @@ import { useLocale } from "../../lib/i18n/locale-context";
 import { FileList } from "../../components/FileList";
 import { MoveFileModal } from "../../components/MoveFileModal";
 import { FilePreviewModal } from "../../components/FilePreviewModal";
+import { FileInfoModal } from "../../components/FileInfoModal";
 import { CloseIcon } from "../../components/icons";
+import { useFileStats } from "../../lib/useFileStats";
 
 interface ResumableUpload extends PendingUpload {
   receivedBytes: number;
 }
 
+interface UploadState {
+  currentFilename: string;
+  currentPercent: number;
+  currentFileIndex: number;
+  totalFiles: number;
+  overallPercent: number;
+  overallLoadedBytes: number;
+  overallTotalBytes: number;
+}
+
 export default function UploadPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
 
-  const [uploadProgress, setUploadProgress] = useState<{ filename: string; percent: number } | null>(null);
+  const [activeUpload, setActiveUpload] = useState<UploadState | null>(null);
   const [uploaded, setUploaded] = useState<FileMeta[]>([]);
   const [moving, setMoving] = useState<FileMeta | null>(null);
   const [previewing, setPreviewing] = useState<FileMeta | null>(null);
+  const [infoFile, setInfoFile] = useState<FileMeta | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resumable, setResumable] = useState<ResumableUpload[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { stats, refresh: refreshStats } = useFileStats(!!user);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
@@ -62,34 +76,68 @@ export default function UploadPage() {
   }, []);
 
   async function uploadFiles(fileList: FileList) {
-    if (fileList.length === 0) return;
+    const filesArray = Array.from(fileList);
+    if (filesArray.length === 0) return;
     setError(null);
+
+    const totalFiles = filesArray.length;
+    const totalBytes = filesArray.reduce((acc, f) => acc + f.size, 0);
+    let completedBytes = 0;
+
     try {
-      // 순서대로 하나씩 올린다 — 청크가 8MB씩이라 동시에 여러 파일을 병렬로 올리면 청크 재시도
-      // 로직이 뒤섞이기 쉽고, 가정용 회선/모바일 업로드 대역폭은 어차피 병렬화 이득이 작다.
-      for (const file of Array.from(fileList)) {
-        setUploadProgress({ filename: file.name, percent: 0 });
-        const created = await uploadFileInChunks(file, ({ loaded, total }) => {
-          setUploadProgress({ filename: file.name, percent: Math.round((loaded / total) * 100) });
+      for (let i = 0; i < totalFiles; i++) {
+        const file = filesArray[i];
+
+        setActiveUpload({
+          currentFilename: file.name,
+          currentPercent: 0,
+          currentFileIndex: i + 1,
+          totalFiles,
+          overallPercent: Math.round((completedBytes / totalBytes) * 100),
+          overallLoadedBytes: completedBytes,
+          overallTotalBytes: totalBytes,
         });
+
+        const created = await uploadFileInChunks(file, ({ loaded }) => {
+          const currentLoaded = loaded;
+          const currentPercent = Math.min(100, Math.round((currentLoaded / file.size) * 100));
+          const currentOverallLoaded = completedBytes + currentLoaded;
+          const overallPercent = Math.min(100, Math.round((currentOverallLoaded / totalBytes) * 100));
+
+          setActiveUpload({
+            currentFilename: file.name,
+            currentPercent,
+            currentFileIndex: i + 1,
+            totalFiles,
+            overallPercent,
+            overallLoadedBytes: currentOverallLoaded,
+            overallTotalBytes: totalBytes,
+          });
+        });
+
+        completedBytes += file.size;
         setUploaded((prev) => [created, ...prev]);
         setResumable((prev) => prev.filter((r) => r.filename !== file.name || r.size !== file.size));
+        refreshStats();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setUploadProgress(null);
+      setActiveUpload(null);
     }
   }
 
   function handleDrop(e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setDragActive(false);
-    uploadFiles(e.dataTransfer.files);
+    if (!activeUpload) {
+      uploadFiles(e.dataTransfer.files);
+    }
   }
 
   function removeFromSessionList(id: string) {
     setUploaded((prev) => prev.filter((f) => f.id !== id));
+    refreshStats();
   }
 
   async function discardResumable(uploadId: string) {
@@ -131,11 +179,87 @@ export default function UploadPage() {
         </div>
       )}
 
+      {activeUpload && (
+        <div
+          style={{
+            padding: 16,
+            borderRadius: 10,
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            marginBottom: 16,
+          }}
+        >
+          {/* Current file title and progress */}
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 6 }}>
+            <span style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "75%" }}>
+              {t("uploading")} {activeUpload.currentFilename}
+            </span>
+            <span style={{ color: "var(--color-text-muted)", flexShrink: 0 }}>
+              {activeUpload.currentPercent}%
+            </span>
+          </div>
+          {/* Current file progress bar */}
+          <div
+            style={{
+              height: 6,
+              borderRadius: 999,
+              background: "var(--color-bg)",
+              overflow: "hidden",
+              marginBottom: activeUpload.totalFiles > 1 ? 14 : 0,
+            }}
+          >
+            <div
+              style={{
+                width: `${activeUpload.currentPercent}%`,
+                height: "100%",
+                background: "var(--color-primary)",
+                borderRadius: 999,
+                transition: "width 0.2s ease",
+              }}
+            />
+          </div>
+
+          {/* Overall progress if multi-file */}
+          {activeUpload.totalFiles > 1 && (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 }}>
+                <span style={{ color: "var(--color-text-muted)" }}>
+                  {locale === "ko"
+                    ? `${activeUpload.totalFiles}개의 파일 중 ${activeUpload.currentFileIndex}번째 파일 업로드 중…`
+                    : `Uploading file ${activeUpload.currentFileIndex} of ${activeUpload.totalFiles}…`}
+                </span>
+                <span style={{ color: "var(--color-text-muted)" }}>
+                  {formatBytes(activeUpload.overallLoadedBytes)} / {formatBytes(activeUpload.overallTotalBytes)} ({activeUpload.overallPercent}%)
+                </span>
+              </div>
+              <div
+                style={{
+                  height: 6,
+                  borderRadius: 999,
+                  background: "var(--color-bg)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${activeUpload.overallPercent}%`,
+                    height: "100%",
+                    background: "#4caf50",
+                    borderRadius: 999,
+                    transition: "width 0.2s ease",
+                  }}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       <div
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => !activeUpload && fileInputRef.current?.click()}
         onDragOver={(e) => {
           e.preventDefault();
-          setDragActive(true);
+          if (!activeUpload) setDragActive(true);
         }}
         onDragLeave={() => setDragActive(false)}
         onDrop={handleDrop}
@@ -144,17 +268,19 @@ export default function UploadPage() {
           borderRadius: 12,
           padding: 32,
           textAlign: "center",
-          cursor: "pointer",
+          cursor: activeUpload ? "not-allowed" : "pointer",
           color: "var(--color-text-muted)",
           marginBottom: 16,
+          opacity: activeUpload ? 0.6 : 1,
         }}
       >
-        {uploadProgress ? `${t("uploading")} ${uploadProgress.filename} (${uploadProgress.percent}%)` : t("dropHint")}
+        {activeUpload ? t("uploading") : t("dropHint")}
         <input
           ref={fileInputRef}
           type="file"
           multiple
           hidden
+          disabled={!!activeUpload}
           onChange={(e) => e.target.files && uploadFiles(e.target.files)}
         />
       </div>
@@ -170,6 +296,7 @@ export default function UploadPage() {
             onDeleted={removeFromSessionList}
             onMove={setMoving}
             onPreview={setPreviewing}
+            onInfo={setInfoFile}
           />
         </>
       )}
@@ -183,6 +310,7 @@ export default function UploadPage() {
         }}
       />
       <FilePreviewModal file={previewing} onClose={() => setPreviewing(null)} />
+      <FileInfoModal file={infoFile} stats={stats} onClose={() => setInfoFile(null)} />
     </main>
   );
 }

@@ -44,6 +44,9 @@ export const translations = {
   seeAllFiles: { ko: "전체 보기", en: "See all" },
   storageUsed: { ko: "사용 중인 용량", en: "Storage used" },
   storageFree: { ko: "남은 용량", en: "Free" },
+  filesStorageTitle: { ko: "파일 용량", en: "Files storage" },
+  systemDiskTitle: { ko: "시스템 디스크", en: "System disk" },
+  filter_all: { ko: "전체", en: "All" },
   fileType_image: { ko: "이미지", en: "Images" },
   fileType_video: { ko: "동영상", en: "Videos" },
   fileType_audio: { ko: "오디오", en: "Audio" },
@@ -102,6 +105,18 @@ export const translations = {
     ko: "이 파일 형식은 미리보기를 지원하지 않습니다",
     en: "Preview isn't available for this file type",
   },
+  infoTitle: { ko: "파일 상세 정보", en: "File Details" },
+  infoFilename: { ko: "파일명", en: "File name" },
+  infoFileType: { ko: "파일 형식", en: "File type" },
+  infoFileSize: { ko: "파일 크기", en: "File size" },
+  infoCreatedAt: { ko: "업로드 일시", en: "Uploaded at" },
+  infoUploadedBy: { ko: "업로더", en: "Uploaded by" },
+  infoUserFilesRatio: { ko: "전체 파일 대비 비율", en: "Ratio of user files" },
+  infoDiskRatio: { ko: "시스템 디스크 대비 비율", en: "Ratio of system disk" },
+  infoButton: { ko: "정보", en: "Info" },
+  infoShareLink: { ko: "다운로드 링크", en: "Download link" },
+  copied: { ko: "복사됨!", en: "Copied!" },
+  copy: { ko: "복사", en: "Copy" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
