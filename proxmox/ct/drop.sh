@@ -4,7 +4,7 @@ source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxV
 # Intercept and redirect the installer script download to our own repository
 function curl() {
   if [[ "$*" == *"community-scripts/ProxmoxVE/main/install/drop-install.sh"* ]]; then
-    command curl -fsSL "https://raw.githubusercontent.com/eigger/drop/master/proxmox/install/drop-install.sh"
+    command curl -fsSL "https://raw.githubusercontent.com/eigger/drop/main/proxmox/install/drop-install.sh"
   else
     command curl "$@"
   fi
