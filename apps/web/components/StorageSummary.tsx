@@ -27,16 +27,32 @@ const TYPE_COLORS: Record<FileTypeCategory, string> = {
 export function StorageSummary({ stats }: { stats: FileStats }) {
   const { t } = useLocale();
 
-  // Stacked progress segments for user files
-  const segments = TYPE_ORDER.map((category) => {
-    const entry = stats.byType[category] ?? { count: 0, size: 0 };
-    return {
-      category,
-      size: entry.size,
-      pct: stats.totalSize > 0 ? (entry.size / stats.totalSize) * 100 : 0,
-      color: TYPE_COLORS[category],
-    };
-  }).filter((seg) => seg.size > 0);
+  const totalDisk = stats.disk.total;
+  const systemUsed = Math.max(0, stats.disk.used - stats.totalSize);
+
+  // Stacked progress segments for total disk space
+  const segments = [
+    ...TYPE_ORDER.map((category) => {
+      const entry = stats.byType[category] ?? { count: 0, size: 0 };
+      return {
+        key: category,
+        size: entry.size,
+        color: TYPE_COLORS[category],
+        title: `${t(`fileType_${category}`)}: ${formatBytes(entry.size)}`,
+      };
+    }),
+    {
+      key: "system",
+      size: systemUsed,
+      color: "var(--color-border)", // Elegant neutral color that adapts to dark/light themes
+      title: `System & Other: ${formatBytes(systemUsed)}`,
+    },
+  ]
+    .filter((seg) => seg.size > 0)
+    .map((seg) => ({
+      ...seg,
+      pct: totalDisk > 0 ? (seg.size / totalDisk) * 100 : 0,
+    }));
 
   return (
     <section
@@ -48,26 +64,26 @@ export function StorageSummary({ stats }: { stats: FileStats }) {
         border: "1px solid var(--color-border)",
       }}
     >
-      {/* 1. User Files Storage Section */}
+      {/* Storage Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>
-          {t("filesStorageTitle")}
+          {t("storageUsed")}
         </span>
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>
-          {formatBytes(stats.totalSize)}
+          {formatBytes(stats.disk.used)} / {formatBytes(stats.disk.total)}
         </span>
       </div>
 
-      {/* Stacked Progress Bar */}
+      {/* Stacked Disk Progress Bar */}
       <div
         style={{
-          height: 10,
+          height: 12,
           borderRadius: 999,
           background: "var(--color-bg)",
           border: "1px solid var(--color-border)",
           overflow: "hidden",
           display: "flex",
-          marginBottom: 16,
+          marginBottom: 8,
         }}
       >
         {segments.length === 0 ? (
@@ -75,21 +91,38 @@ export function StorageSummary({ stats }: { stats: FileStats }) {
         ) : (
           segments.map((seg) => (
             <div
-              key={seg.category}
+              key={seg.key}
               style={{
                 width: `${seg.pct}%`,
                 height: "100%",
                 background: seg.color,
                 transition: "width 0.3s ease",
               }}
-              title={`${t(`fileType_${seg.category}`)}: ${formatBytes(seg.size)}`}
+              title={seg.title}
             />
           ))
         )}
       </div>
 
+      {/* Capacity Labels */}
+      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, fontSize: 11, color: "var(--color-text-muted)", marginBottom: 16 }}>
+        <span>
+          {t("storageFree")}: {formatBytes(stats.disk.free)}
+        </span>
+        <span style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "var(--color-border)" }} />
+            System: {formatBytes(systemUsed)}
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "var(--color-primary)" }} />
+            Files: {formatBytes(stats.totalSize)}
+          </span>
+        </span>
+      </div>
+
       {/* Category Grid Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8 }}>
         {TYPE_ORDER.map((category) => {
           const Icon = TYPE_ICON[category];
           const entry = stats.byType[category] ?? { count: 0, size: 0 };
@@ -123,41 +156,6 @@ export function StorageSummary({ stats }: { stats: FileStats }) {
             </Link>
           );
         })}
-      </div>
-
-      {/* 2. System Disk Storage Section */}
-      <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-          <span style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 500 }}>
-            {t("systemDiskTitle")}
-          </span>
-          <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
-            {formatBytes(stats.disk.used)} / {formatBytes(stats.disk.total)}
-          </span>
-        </div>
-        <div
-          style={{
-            height: 6,
-            borderRadius: 999,
-            background: "var(--color-bg)",
-            border: "1px solid var(--color-border)",
-            overflow: "hidden",
-            marginBottom: 4,
-          }}
-        >
-          <div
-            style={{
-              width: `${(stats.disk.total > 0 ? stats.disk.used / stats.disk.total : 0) * 100}%`,
-              height: "100%",
-              background: "var(--color-text-muted)",
-              opacity: 0.6,
-              borderRadius: 999,
-            }}
-          />
-        </div>
-        <div style={{ fontSize: 11, color: "var(--color-text-muted)", textAlign: "right" }}>
-          {t("storageFree")}: {formatBytes(stats.disk.free)}
-        </div>
       </div>
     </section>
   );
