@@ -104,6 +104,19 @@ function BrowseFilesPageInner() {
     selection.cancel();
   }
 
+  async function handleDeleteSelected() {
+    if (!confirm(t("deleteSelectedConfirm"))) return;
+    const ids = Array.from(selection.selectedIds);
+    await apiJson("/api/files/bulk-delete", { method: "POST", body: JSON.stringify({ ids }) });
+    ids.forEach(removeFileLocally);
+    selection.cancel();
+  }
+
+  function handleToggleSelectAll() {
+    if (selection.selectedIds.size === contents.files.length) selection.clearSelection();
+    else selection.selectAll(contents.files.map((f) => f.id));
+  }
+
   if (authLoading || !user) return null;
 
   return (
@@ -197,9 +210,12 @@ function BrowseFilesPageInner() {
           <SelectionToolbar
             active={selection.active}
             count={selection.selectedIds.size}
+            allSelected={contents.files.length > 0 && selection.selectedIds.size === contents.files.length}
             onStart={selection.start}
             onCancel={selection.cancel}
+            onToggleSelectAll={handleToggleSelectAll}
             onDownload={handleDownloadSelected}
+            onDelete={handleDeleteSelected}
           />
           <FileList
             files={contents.files}

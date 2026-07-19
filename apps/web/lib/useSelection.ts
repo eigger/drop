@@ -24,5 +24,13 @@ export function useSelection() {
     });
   }
 
-  return { active, selectedIds, start, cancel, toggle };
+  function selectAll(ids: string[]) {
+    setSelectedIds(new Set(ids));
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  return { active, selectedIds, start, cancel, toggle, selectAll, clearSelection };
 }
