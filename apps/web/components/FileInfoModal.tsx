@@ -125,6 +125,24 @@ export function FileInfoModal({
             <div style={infoRowStyle}>
               <span style={labelStyle}>{t("infoUserFilesRatio") || "Ratio of user files"}</span>
               <span style={valueStyle}>{userFilesRatio}%</span>
+              <div
+                style={{
+                  height: 6,
+                  borderRadius: 999,
+                  background: "var(--color-bg)",
+                  overflow: "hidden",
+                  marginTop: 4,
+                }}
+              >
+                <div
+                  style={{
+                    width: `${userFilesRatio}%`,
+                    height: "100%",
+                    background: "var(--color-primary)",
+                    borderRadius: 999,
+                  }}
+                />
+              </div>
             </div>
           )}
 
@@ -132,6 +150,25 @@ export function FileInfoModal({
             <div style={infoRowStyle}>
               <span style={labelStyle}>{t("infoDiskRatio") || "Ratio of system disk"}</span>
               <span style={valueStyle}>{diskRatio}%</span>
+              <div
+                style={{
+                  height: 6,
+                  borderRadius: 999,
+                  background: "var(--color-bg)",
+                  overflow: "hidden",
+                  marginTop: 4,
+                }}
+              >
+                <div
+                  style={{
+                    width: `${diskRatio}%`,
+                    height: "100%",
+                    background: "var(--color-text-muted)",
+                    opacity: 0.8,
+                    borderRadius: 999,
+                  }}
+                />
+              </div>
             </div>
           )}
 
