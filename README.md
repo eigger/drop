@@ -1,4 +1,4 @@
-# drop
+# Drop
 
 [![CI](https://github.com/eigger/drop/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/eigger/drop/actions/workflows/ci.yml)
 [![Docker Release](https://github.com/eigger/drop/actions/workflows/docker-release.yml/badge.svg)](https://github.com/eigger/drop/actions/workflows/docker-release.yml)

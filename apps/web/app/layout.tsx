@@ -7,10 +7,10 @@ import { RegisterServiceWorker } from "./register-sw";
 import { BottomNav } from "../components/BottomNav";
 
 export const metadata: Metadata = {
-  title: "drop",
+  title: "Drop",
   description: "모바일 ↔ PC 파일 중계",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "drop" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Drop" },
 };
 
 export const viewport: Viewport = {

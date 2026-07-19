@@ -160,7 +160,15 @@ export async function fileRoutes(app: FastifyInstance) {
         const limit = `${Math.floor(FILE_SIZE_LIMIT_BYTES / 1024 / 1024)}MB`;
         return reply.code(413).send({ error: t("fileTooLarge", request.locale, { limit }) });
       }
-      throw err;
+      // 공유 원본 앱/네트워크가 파일을 다 보내기 전에 스트림을 끊으면 busboy가 여기서
+      // "unexpected end of multipart data" 같은 에러를 던진다 — 서버 버그가 아니라 클라이언트
+      // 쪽 문제라 재시도 외엔 손쓸 방법이 없지만, 날것의 스택트레이스를 그대로 노출하지 않고
+      // 이미 저장된 파일이 몇 개인지는 알려준다.
+      app.log.error(
+        { err, uploadedBeforeFailure: created.length, contentLength: request.headers["content-length"] },
+        "multipart 업로드 중 오류",
+      );
+      return reply.code(400).send({ error: t("uploadStreamInterrupted", request.locale), uploaded: created });
     }
 
     if (created.length === 0) {

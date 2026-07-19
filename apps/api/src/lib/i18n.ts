@@ -39,6 +39,10 @@ const MESSAGES = {
   },
   uploadChunkOverflow: { ko: "업로드된 용량이 선언한 파일 크기를 초과합니다", en: "Uploaded bytes exceed the declared file size" },
   uploadIncomplete: { ko: "아직 모든 조각이 도착하지 않았습니다", en: "Not all chunks have arrived yet" },
+  uploadStreamInterrupted: {
+    ko: "업로드가 도중에 끊겼습니다. 다시 시도해 주세요",
+    en: "The upload was interrupted partway through. Please try again",
+  },
 
   onlyTrashedCanBePurged: {
     ko: "휴지통에 있는 파일만 영구 삭제할 수 있습니다",

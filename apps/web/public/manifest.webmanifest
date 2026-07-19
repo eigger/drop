@@ -1,6 +1,6 @@
 {
-  "name": "drop",
-  "short_name": "drop",
+  "name": "Drop",
+  "short_name": "Drop",
   "description": "모바일 ↔ PC 파일 중계",
   "start_url": "/",
   "display": "standalone",

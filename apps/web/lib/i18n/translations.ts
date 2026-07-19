@@ -1,5 +1,5 @@
 export const translations = {
-  appName: { ko: "drop", en: "drop" },
+  appName: { ko: "Drop", en: "Drop" },
   loginTitle: { ko: "로그인", en: "Log in" },
   bootstrapTitle: { ko: "관리자 계정 만들기", en: "Create admin account" },
   name: { ko: "이름", en: "Name" },
