@@ -11,10 +11,21 @@ import { prisma } from "../lib/prisma.js";
 import { generateThumbnail } from "../lib/imageProcessing.js";
 import { UPLOAD_DIR, THUMB_DIR, TEMP_DIR, FILE_SIZE_LIMIT_BYTES, deleteStoredFile, deleteThumbnail } from "../lib/uploads.js";
 import { createUploadSession, getUploadSession, deleteUploadSession } from "../lib/uploadSessions.js";
+import { uniqueName } from "../lib/uniqueName.js";
 import { uniqueZipEntryName } from "../lib/zipNaming.js";
 import { t } from "../lib/i18n.js";
 
 export class FileTooLargeError extends Error {}
+
+// 업로드는 항상 루트에 떨어지므로([[project-overview]]/폴더 기능 결정) 루트에 이미 같은
+// 이름이 있으면 덮어쓰지 않고 "이름 (2).확장자" 식으로 살짝 바꿔서 별개 파일로 남긴다.
+async function resolveUniqueFilename(filename: string): Promise<string> {
+  const existing = await prisma.file.findMany({
+    where: { folderId: null, deletedAt: null },
+    select: { filename: true },
+  });
+  return uniqueName(filename, new Set(existing.map((f) => f.filename)));
+}
 
 async function finalizeUpload(options: {
   uploadedById: string;
@@ -22,7 +33,8 @@ async function finalizeUpload(options: {
   mimeType: string;
   destPath: string;
 }) {
-  const { uploadedById, filename, mimeType, destPath } = options;
+  const { uploadedById, mimeType, destPath } = options;
+  const filename = await resolveUniqueFilename(options.filename);
   const { size } = await stat(destPath);
 
   let thumbnailName: string | null = null;

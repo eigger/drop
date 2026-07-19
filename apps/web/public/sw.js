@@ -1,4 +1,4 @@
-const SHELL_CACHE = "drop-shell-v2";
+const SHELL_CACHE = "drop-shell-v4";
 const SHELL_ASSETS = ["/", "/login", "/files", "/upload", "/settings", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
