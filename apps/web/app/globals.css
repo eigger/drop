@@ -1,0 +1,222 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+:root {
+  --nav-height: 64px;
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f0f4f7;
+  --color-text: #1a1a1a;
+  --color-text-muted: #767676;
+  --color-border: #e5e5e5;
+  --color-primary: #1d5fa8;
+  --color-primary-text: #ffffff;
+  --color-danger: #b3261e;
+  --color-modal-overlay: rgba(0, 0, 0, 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #121212;
+    --color-surface: #1c1c1e;
+    --color-surface-hover: #262628;
+    --color-text: #f2f2f2;
+    --color-text-muted: #9a9a9a;
+    --color-border: #333333;
+    --color-primary: #4f9cf5;
+    --color-primary-text: #0b0b0c;
+    --color-danger: #ff6b64;
+    --color-modal-overlay: rgba(0, 0, 0, 0.6);
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+/* 배경/구분선은 화면 전체 폭으로 깔아서(풀블리드) 넓은 화면에서 가운데만 칠해지다 만
+   것처럼 뚝 끊겨 보이지 않게 하고, 실제 탭 내용만 .bottom-nav-inner로 폭을 제한해
+   중앙에 모은다 — 모바일 폭에서는 기존과 동일하게 꽉 차 보인다. */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-height);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: center;
+  z-index: 50;
+}
+
+.bottom-nav-inner {
+  display: flex;
+  width: 100%;
+  max-width: 480px;
+}
+
+@media (min-width: 640px) {
+  .bottom-nav-inner {
+    max-width: 640px;
+  }
+}
+
+.bottom-nav a,
+.bottom-nav .bottom-nav-more {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: 0.72rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.bottom-nav a.active,
+.bottom-nav .bottom-nav-more.active {
+  color: var(--color-primary);
+}
+
+.bottom-nav .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav .icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+/* 가운데 업로드 탭은 원형 아이콘 배경(icon-wrap)이 네비 위로 살짝 튀어나오게 해서
+   가장 중요한 동작이라는 걸 시각적으로 강조한다. */
+.bottom-nav .primary-tab,
+.bottom-nav .primary-tab.active {
+  color: var(--color-primary);
+}
+
+.bottom-nav .primary-tab .icon-wrap {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* 더보기 바텀시트 */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--color-modal-overlay);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 90;
+}
+
+.sheet-card {
+  background: var(--color-surface);
+  border-radius: 16px 16px 0 0;
+  padding: 12px 20px calc(20px + env(safe-area-inset-bottom));
+  width: 100%;
+  max-width: 480px;
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+  animation: sheet-up 0.18s ease;
+}
+
+@media (min-width: 640px) {
+  .sheet-card {
+    max-width: 640px;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+  margin: 0 auto 12px;
+}
+
+.sheet-group-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 14px 0 6px;
+}
+
+.sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.sheet-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 64px;
+  padding: 10px 6px;
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border: none;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+}
+
+.sheet-item:active {
+  transform: translateY(0.5px);
+}
+
+.page-with-bottom-nav {
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0));
+}

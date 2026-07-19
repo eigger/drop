@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  GENERAL
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(GENERAL)
+  createdAt    DateTime @default(now())
+  files        File[]
+  folders      Folder[]
+}
+
+// 업로드는 항상 루트(폴더 없음)로 들어오고, 나중에 파일 목록에서 폴더로 옮긴다 — 그래서
+// File.folderId는 nullable이고 공유 시트 업로드 경로는 폴더를 몰라도 된다.
+model Folder {
+  id          String   @id @default(cuid())
+  name        String
+  parentId    String?
+  parent      Folder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Folder[] @relation("FolderTree")
+  files       File[]
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model File {
+  id            String    @id @default(cuid())
+  filename      String // 원본 파일명 (다운로드 시 그대로 노출)
+  storedName    String // 디스크에 저장된 UUID 기반 파일명
+  thumbnailName String? // 이미지일 때만 생성되는 썸네일 파일명
+  mimeType      String
+  size          Int
+  uploadedById  String
+  uploadedBy    User      @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  folderId      String?
+  // 폴더가 삭제될 때 파일까지 같이 사라지면 안 된다 — 폴더 삭제 로직이 안의 파일들을 먼저
+  // 휴지통으로 보낸 뒤 폴더 행을 지우므로, 여기서는 그냥 참조만 끊는다(SetNull).
+  folder        Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime? // null이면 정상 목록, 값이 있으면 휴지통 — 삭제는 소프트 삭제, /permanent에서만 실제로 지운다
+}
