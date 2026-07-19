@@ -130,3 +130,51 @@ export function RestoreIcon({ size = 18 }: { size?: number }) {
     </svg>
   );
 }
+
+export function ImageTypeIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg {...iconProps(size)}>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+      <circle cx="9" cy="10" r="1.6" />
+      <path d="M4 17l5-5 3.5 3.5L16.5 11 20 15" />
+    </svg>
+  );
+}
+
+export function VideoTypeIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg {...iconProps(size)}>
+      <rect x="3.5" y="5.5" width="13" height="13" rx="2" />
+      <path d="M16.5 10.5 20.5 8v8l-4-2.5" />
+    </svg>
+  );
+}
+
+export function AudioTypeIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg {...iconProps(size)}>
+      <path d="M9 17V6.5l10-2V15" />
+      <circle cx="6.5" cy="17" r="2.5" />
+      <circle cx="16.5" cy="15" r="2.5" />
+    </svg>
+  );
+}
+
+export function DocumentTypeIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg {...iconProps(size)}>
+      <path d="M6.5 3.5h7L18 8v12a1 1 0 0 1-1 1H6.5a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z" />
+      <path d="M13.5 3.5V8H18" />
+      <path d="M8 12.5h8M8 15.5h8M8 18h5" />
+    </svg>
+  );
+}
+
+export function OtherTypeIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg {...iconProps(size)}>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="M9 12h6M12 9v6" />
+    </svg>
+  );
+}

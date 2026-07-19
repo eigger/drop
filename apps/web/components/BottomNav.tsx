@@ -104,6 +104,10 @@ export function BottomNav() {
                 </button>
               )}
             </div>
+
+            <div style={{ textAlign: "center", fontSize: 12, color: "var(--color-text-muted)", marginTop: 16 }}>
+              {t("appName")} v{process.env.NEXT_PUBLIC_APP_VERSION}
+            </div>
           </div>
         </div>
       )}

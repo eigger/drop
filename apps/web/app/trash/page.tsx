@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FileMeta } from "@drop/shared";
+import { apiFetch } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import { useFiles } from "../../lib/useFiles";
 import { useLocale } from "../../lib/i18n/locale-context";
@@ -13,7 +14,7 @@ export default function TrashPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useLocale();
-  const { files, loading, error, removeLocally } = useFiles(!!user, "/api/files/trash");
+  const { files, loading, error, removeLocally, refresh } = useFiles(!!user, "/api/files/trash");
   const [previewing, setPreviewing] = useState<FileMeta | null>(null);
 
   useEffect(() => {
@@ -22,10 +23,21 @@ export default function TrashPage() {
 
   if (authLoading || !user) return null;
 
+  async function handleEmptyTrash() {
+    if (!confirm(t("emptyTrashConfirm"))) return;
+    await apiFetch("/api/files/trash", { method: "DELETE" });
+    await refresh();
+  }
+
   return (
     <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>
-      <header style={{ marginBottom: 8 }}>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
         <h1 style={{ fontSize: 20 }}>{t("trashTitle")}</h1>
+        {files.length > 0 && (
+          <button onClick={handleEmptyTrash} style={emptyTrashButtonStyle}>
+            {t("emptyTrashAction")}
+          </button>
+        )}
       </header>
       <p style={{ fontSize: 12, color: "var(--color-text-muted)", marginBottom: 16 }}>{t("trashHint")}</p>
 
@@ -51,3 +63,13 @@ export default function TrashPage() {
     </main>
   );
 }
+
+const emptyTrashButtonStyle = {
+  padding: "6px 12px",
+  borderRadius: 8,
+  border: "1px solid var(--color-border)",
+  background: "none",
+  cursor: "pointer",
+  fontSize: 13,
+  color: "var(--color-danger)",
+} as const;

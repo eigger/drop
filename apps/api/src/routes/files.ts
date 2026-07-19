@@ -1,12 +1,21 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, createReadStream, createWriteStream } from "node:fs";
+import { existsSync, createReadStream, createWriteStream, statfsSync } from "node:fs";
 import { mkdir, stat, unlink, appendFile, rename } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import path from "node:path";
 import archiver from "archiver";
 import type { FastifyInstance } from "fastify";
 import type { MultipartFile } from "@fastify/multipart";
-import { uploadInitSchema, UPLOAD_CHUNK_SIZE_BYTES, moveFileSchema, previewKindForMimeType } from "@drop/shared";
+import {
+  uploadInitSchema,
+  UPLOAD_CHUNK_SIZE_BYTES,
+  moveFileSchema,
+  bulkFileIdsSchema,
+  previewKindForMimeType,
+  categorizeFileType,
+  fileTypeCategories,
+  type FileStats,
+} from "@drop/shared";
 import { prisma } from "../lib/prisma.js";
 import { generateThumbnail } from "../lib/imageProcessing.js";
 import { UPLOAD_DIR, THUMB_DIR, TEMP_DIR, FILE_SIZE_LIMIT_BYTES, deleteStoredFile, deleteThumbnail } from "../lib/uploads.js";
@@ -119,6 +128,39 @@ export async function fileRoutes(app: FastifyInstance) {
     return files.map(toFileMeta);
   });
 
+  // 홈 화면 요약용 — 전체 파일 개수/용량을 타입별로 집계하고, UPLOAD_DIR이 마운트된
+  // 파일시스템의 남은 용량을 statfs로 읽어 함께 내려준다.
+  app.get("/stats", async (): Promise<FileStats> => {
+    const files = await prisma.file.findMany({
+      where: { deletedAt: null },
+      select: { size: true, mimeType: true },
+    });
+
+    const byType = Object.fromEntries(
+      fileTypeCategories.map((category) => [category, { count: 0, size: 0 }]),
+    ) as FileStats["byType"];
+
+    let totalSize = 0;
+    for (const file of files) {
+      const category = categorizeFileType(file.mimeType);
+      byType[category]!.count += 1;
+      byType[category]!.size += file.size;
+      totalSize += file.size;
+    }
+
+    await mkdir(UPLOAD_DIR, { recursive: true });
+    const fs = statfsSync(UPLOAD_DIR);
+    const total = fs.blocks * fs.bsize;
+    const free = fs.bavail * fs.bsize;
+
+    return {
+      totalFiles: files.length,
+      totalSize,
+      byType,
+      disk: { total, free, used: total - free },
+    };
+  });
+
   app.get("/trash", async () => {
     const files = await prisma.file.findMany({
       where: { deletedAt: { not: null } },
@@ -126,6 +168,22 @@ export async function fileRoutes(app: FastifyInstance) {
       orderBy: { deletedAt: "desc" },
     });
     return files.map(toFileMeta);
+  });
+
+  // 휴지통 비우기 — 안에 있는 모든 파일을 한 번에 영구 삭제한다. /:id/permanent과 같은
+  // "휴지통에 있는 것만" 제약이 자동으로 적용된다(대상이 이미 deletedAt이 있는 것들뿐이므로).
+  app.delete("/trash", async () => {
+    const trashed = await prisma.file.findMany({ where: { deletedAt: { not: null } } });
+    if (trashed.length === 0) return { purged: 0 };
+
+    await prisma.file.deleteMany({ where: { id: { in: trashed.map((f) => f.id) } } });
+    await Promise.all(
+      trashed.flatMap((f) => [
+        deleteStoredFile(f.storedName),
+        f.thumbnailName ? deleteThumbnail(f.thumbnailName) : Promise.resolve(),
+      ]),
+    );
+    return { purged: trashed.length };
   });
 
   // 여러 파일을 한 번에 받을 때 쓴다 — 브라우저(특히 Chrome)는 클릭 한 번에서 나온 자동
@@ -366,6 +424,18 @@ export async function fileRoutes(app: FastifyInstance) {
 
     reply.type("image/jpeg");
     return createReadStream(thumbPath);
+  });
+
+  // 목록에서 여러 파일을 골라 한 번에 휴지통으로 보낸다 — 단건 삭제와 같은 소프트 삭제.
+  app.post("/bulk-delete", async (request, reply) => {
+    const parsed = bulkFileIdsSchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+
+    const result = await prisma.file.updateMany({
+      where: { id: { in: parsed.data.ids }, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+    return { deleted: result.count };
   });
 
   // 소프트 삭제 — 목록에서 즉시 안 보이게만 하고, 실수로 지운 걸 휴지통에서 되돌릴 수
