@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { FileMeta, FolderContents } from "@drop/shared";
+import { categorizeFileType, fileTypeCategories, type FileMeta, type FolderContents, type FileTypeCategory } from "@drop/shared";
 import { API_URL, apiFetch, apiJson } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import { useSelection } from "../../lib/useSelection";
@@ -10,8 +10,10 @@ import { useLocale } from "../../lib/i18n/locale-context";
 import { FileList } from "../../components/FileList";
 import { MoveFileModal } from "../../components/MoveFileModal";
 import { FilePreviewModal } from "../../components/FilePreviewModal";
+import { FileInfoModal } from "../../components/FileInfoModal";
 import { SelectionToolbar } from "../../components/SelectionToolbar";
 import { FolderIcon, CloseIcon } from "../../components/icons";
+import { useFileStats } from "../../lib/useFileStats";
 
 const EMPTY_CONTENTS: FolderContents = { folder: null, breadcrumbs: [], subfolders: [], files: [] };
 
@@ -29,6 +31,7 @@ function BrowseFilesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const folderId = searchParams.get("folder");
+  const filterType = searchParams.get("type") as FileTypeCategory | null;
   const { user, loading: authLoading } = useAuth();
   const { t } = useLocale();
 
@@ -37,9 +40,11 @@ function BrowseFilesPageInner() {
   const [error, setError] = useState<string | null>(null);
   const [moving, setMoving] = useState<FileMeta | null>(null);
   const [previewing, setPreviewing] = useState<FileMeta | null>(null);
+  const [infoFile, setInfoFile] = useState<FileMeta | null>(null);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const selection = useSelection();
+  const { stats, refresh: refreshStats } = useFileStats(!!user);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
@@ -48,22 +53,62 @@ function BrowseFilesPageInner() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const path = folderId ? `/api/folders/${folderId}` : "/api/folders/root";
-      setContents(await apiJson<FolderContents>(path));
+      if (filterType && !folderId) {
+        // Global type filtering: fetch all files and filter on client
+        const allFiles = await apiJson<FileMeta[]>("/api/files");
+        const filteredFiles = allFiles.filter(
+          (f) => categorizeFileType(f.mimeType) === filterType
+        );
+        setContents({
+          folder: null,
+          breadcrumbs: [],
+          subfolders: [],
+          files: filteredFiles,
+        });
+      } else {
+        // Normal browsing or folder-level type filtering
+        const path = folderId ? `/api/folders/${folderId}` : "/api/folders/root";
+        const res = await apiJson<FolderContents>(path);
+        if (filterType) {
+          setContents({
+            ...res,
+            subfolders: [],
+            files: res.files.filter(
+              (f) => categorizeFileType(f.mimeType) === filterType
+            ),
+          });
+        } else {
+          setContents(res);
+        }
+      }
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
-  }, [folderId]);
+  }, [folderId, filterType]);
 
   useEffect(() => {
     if (user) refresh();
   }, [user, refresh]);
 
   function goToFolder(id: string | null) {
-    router.push(id ? `/files?folder=${id}` : "/files");
+    const params = new URLSearchParams();
+    if (id) params.set("folder", id);
+    if (filterType) params.set("type", filterType);
+    const queryStr = params.toString();
+    router.push(queryStr ? `/files?${queryStr}` : "/files");
+  }
+
+  function handleSelectFilter(type: FileTypeCategory | null) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (type) {
+      params.set("type", type);
+    } else {
+      params.delete("type");
+    }
+    router.push(`/files?${params.toString()}`);
   }
 
   async function handleCreateFolder(e: FormEvent) {
@@ -94,6 +139,7 @@ function BrowseFilesPageInner() {
 
   function removeFileLocally(id: string) {
     setContents((prev) => ({ ...prev, files: prev.files.filter((f) => f.id !== id) }));
+    refreshStats();
   }
 
   function handleDownloadSelected() {
@@ -110,6 +156,7 @@ function BrowseFilesPageInner() {
     await apiJson("/api/files/bulk-delete", { method: "POST", body: JSON.stringify({ ids }) });
     ids.forEach(removeFileLocally);
     selection.cancel();
+    refreshStats();
   }
 
   function handleToggleSelectAll() {
@@ -135,13 +182,43 @@ function BrowseFilesPageInner() {
         ))}
       </nav>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-        <button onClick={() => setCreatingFolder((v) => !v)} style={newFolderButtonStyle}>
-          + {t("newFolder")}
+      {/* Category filter buttons */}
+      <div
+        className="no-scrollbar"
+        style={{
+          display: "flex",
+          gap: 6,
+          overflowX: "auto",
+          paddingBottom: 8,
+          marginBottom: 16,
+        }}
+      >
+        <button
+          onClick={() => handleSelectFilter(null)}
+          style={filterButtonStyle(filterType === null)}
+        >
+          {t("filter_all") || "All"}
         </button>
+        {fileTypeCategories.map((category) => (
+          <button
+            key={category}
+            onClick={() => handleSelectFilter(category)}
+            style={filterButtonStyle(filterType === category)}
+          >
+            {t(`fileType_${category}`)}
+          </button>
+        ))}
       </div>
 
-      {creatingFolder && (
+      {!filterType && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <button onClick={() => setCreatingFolder((v) => !v)} style={newFolderButtonStyle}>
+            + {t("newFolder")}
+          </button>
+        </div>
+      )}
+
+      {!filterType && creatingFolder && (
         <form onSubmit={handleCreateFolder} style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           <input
             autoFocus
@@ -223,6 +300,7 @@ function BrowseFilesPageInner() {
             onDeleted={removeFileLocally}
             onMove={setMoving}
             onPreview={setPreviewing}
+            onInfo={setInfoFile}
             selectable={selection.active}
             selectedIds={selection.selectedIds}
             onToggleSelect={selection.toggle}
@@ -239,8 +317,24 @@ function BrowseFilesPageInner() {
         }}
       />
       <FilePreviewModal file={previewing} onClose={() => setPreviewing(null)} />
+      <FileInfoModal file={infoFile} stats={stats} onClose={() => setInfoFile(null)} />
     </main>
   );
+}
+
+function filterButtonStyle(active: boolean) {
+  return {
+    padding: "6px 14px",
+    borderRadius: 999,
+    border: active ? "1px solid var(--color-primary)" : "1px solid var(--color-border)",
+    background: active ? "var(--color-primary)" : "var(--color-surface)",
+    color: active ? "var(--color-primary-text)" : "var(--color-text)",
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: active ? 600 : 400,
+    whiteSpace: "nowrap" as const,
+    transition: "all 0.15s ease",
+  };
 }
 
 function crumbStyle(active: boolean) {

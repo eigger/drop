@@ -5,7 +5,7 @@ import { API_URL, apiFetch } from "../lib/api";
 import { formatBytes } from "../lib/formatBytes";
 import { useLocale } from "../lib/i18n/locale-context";
 import { FileThumbnail } from "./FileThumbnail";
-import { DownloadIcon, MoveIcon, CloseIcon } from "./icons";
+import { DownloadIcon, MoveIcon, CloseIcon, InfoIcon } from "./icons";
 
 export function handleDownload(file: FileMeta) {
   // fetch+blob로 받으면 브라우저 탭 메모리에 파일 전체가 올라간다 — 대용량 파일에서는 이게
@@ -19,6 +19,7 @@ export function FileRow({
   onDeleted,
   onMove,
   onPreview,
+  onInfo,
   selectable,
   selected,
   onToggleSelect,
@@ -27,6 +28,7 @@ export function FileRow({
   onDeleted: (id: string) => void;
   onMove?: (file: FileMeta) => void;
   onPreview?: (file: FileMeta) => void;
+  onInfo?: (file: FileMeta) => void;
   selectable?: boolean;
   selected?: boolean;
   onToggleSelect?: (id: string) => void;
@@ -99,6 +101,11 @@ export function FileRow({
       </div>
       {!selectable && (
         <>
+          {onInfo && (
+            <button onClick={() => onInfo(file)} style={iconButtonStyle} aria-label={t("infoButton") || "Info"}>
+              <InfoIcon size={16} />
+            </button>
+          )}
           <button onClick={() => handleDownload(file)} style={iconButtonStyle} aria-label={t("download")}>
             <DownloadIcon size={16} />
           </button>

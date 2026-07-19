@@ -13,6 +13,7 @@ import { useLocale } from "../lib/i18n/locale-context";
 import { FileList } from "../components/FileList";
 import { MoveFileModal } from "../components/MoveFileModal";
 import { FilePreviewModal } from "../components/FilePreviewModal";
+import { FileInfoModal } from "../components/FileInfoModal";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { StorageSummary } from "../components/StorageSummary";
 
@@ -26,6 +27,7 @@ export default function HomePage() {
   const { stats, refresh: refreshStats } = useFileStats(!!user);
   const [moving, setMoving] = useState<FileMeta | null>(null);
   const [previewing, setPreviewing] = useState<FileMeta | null>(null);
+  const [infoFile, setInfoFile] = useState<FileMeta | null>(null);
   const selection = useSelection();
 
   useEffect(() => {
@@ -100,6 +102,7 @@ export default function HomePage() {
           }}
           onMove={setMoving}
           onPreview={setPreviewing}
+          onInfo={setInfoFile}
           selectable={selection.active}
           selectedIds={selection.selectedIds}
           onToggleSelect={selection.toggle}
@@ -115,6 +118,7 @@ export default function HomePage() {
         }}
       />
       <FilePreviewModal file={previewing} onClose={() => setPreviewing(null)} />
+      <FileInfoModal file={infoFile} stats={stats} onClose={() => setInfoFile(null)} />
     </main>
   );
 }
