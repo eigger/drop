@@ -11,12 +11,6 @@ A lightweight, self-hosted file sharing service. Designed to make file transfers
 
 [한국어 (Korean)](./README.ko.md)
 
----
-
-### Screenshot
-![Drop Mobile Screenshot](./docs/screenshot.png)
-
----
 
 ## Features
 

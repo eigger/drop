@@ -11,12 +11,6 @@
 
 [English](./README.md)
 
----
-
-### 스크린샷
-![Drop 모바일 스크린샷](./docs/screenshot.png)
-
----
 
 ## 기능
 
