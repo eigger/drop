@@ -39,13 +39,15 @@ export function StorageSummary({ stats }: { stats: FileStats }) {
         size: entry.size,
         color: TYPE_COLORS[category],
         title: `${t(`fileType_${category}`)}: ${formatBytes(entry.size)}`,
+        label: t(`fileType_${category}`),
       };
     }),
     {
       key: "system",
       size: systemUsed,
       color: "var(--color-border)", // Elegant neutral color that adapts to dark/light themes
-      title: `System & Other: ${formatBytes(systemUsed)}`,
+      title: `${t("system")}: ${formatBytes(systemUsed)}`,
+      label: t("system"),
     },
   ]
     .filter((seg) => seg.size > 0)
@@ -97,6 +99,8 @@ export function StorageSummary({ stats }: { stats: FileStats }) {
                 height: "100%",
                 background: seg.color,
                 transition: "width 0.3s ease",
+                minWidth: seg.pct > 0 ? "4px" : "0px",
+                flexShrink: 0,
               }}
               title={seg.title}
             />
@@ -110,14 +114,12 @@ export function StorageSummary({ stats }: { stats: FileStats }) {
           {t("storageFree")}: {formatBytes(stats.disk.free)}
         </span>
         <span style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "var(--color-border)" }} />
-            System: {formatBytes(systemUsed)}
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "var(--color-primary)" }} />
-            Files: {formatBytes(stats.totalSize)}
-          </span>
+          {segments.map((seg) => (
+            <span key={seg.key} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: seg.color }} />
+              {seg.label}: {formatBytes(seg.size)}
+            </span>
+          ))}
         </span>
       </div>
 

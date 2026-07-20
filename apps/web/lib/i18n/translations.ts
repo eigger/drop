@@ -46,6 +46,7 @@ export const translations = {
   storageFree: { ko: "남은 용량", en: "Free" },
   filesStorageTitle: { ko: "파일 용량", en: "Files storage" },
   systemDiskTitle: { ko: "시스템 디스크", en: "System disk" },
+  system: { ko: "시스템", en: "System" },
   filter_all: { ko: "전체", en: "All" },
   fileType_image: { ko: "이미지", en: "Images" },
   fileType_video: { ko: "동영상", en: "Videos" },
