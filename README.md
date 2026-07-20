@@ -7,58 +7,63 @@
 [![Self-hosted](https://img.shields.io/badge/hosting-self--hosted-2563EB)](proxmox/ct/drop.sh)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Feigger%2Fdrop-2496ED?logo=docker&logoColor=white)](https://github.com/eigger/drop/pkgs/container/drop-api)
 
-셀프호스팅하는 가벼운 파일 중계 서비스. 모바일 ↔ PC 간 파일을 최대한 간단하게 주고받는 게 핵심 — 안드로이드에서는 카톡/갤러리 등의 공유 시트에서 바로 업로드하고, PC에서는 드래그앤드롭으로 올리고 클릭 한 번으로 내려받는다.
+A lightweight, self-hosted file sharing service. Designed to make file transfers between mobile devices and PCs as simple as possible—upload directly from the share sheet in Android, and drag-and-drop on PC with single-click downloads.
 
-Docs: [`docs/ROADMAP.md`](./docs/ROADMAP.md) (구현 현황, 알려진 제약사항)
-
----
-
-## 기능
-
-- **업로드**: 드래그앤드롭/파일 선택(다중 파일), 안드로이드 공유 시트(`share_target`)로 다른 앱에서 바로 전송
-- **대용량 파일**: 8MB 단위 청크 업로드 — 요청 하나의 메모리 사용량이 파일 크기와 무관하게 일정하고, 앱이 중간에 죽어도(모바일 백그라운드 종료 등) 같은 파일을 다시 선택하면 이어서 올라간다
-- **다운로드**: 개별 다운로드는 물론, 여러 파일을 체크박스로 선택해 zip으로 한 번에 다운로드
-- **폴더**: 폴더 안에 폴더를 만들 수 있는 다중 계층 구조, 파일을 폴더로 이동
-- **휴지통**: 삭제는 소프트 삭제 → 복원 가능, 30일 뒤 자동 영구 삭제
-- **PWA**: 홈 화면에 설치, 오프라인 앱 셸 캐싱
-- **인증**: 회원가입 없이 최초 1회 관리자 부트스트랩, 관리자만 이후 계정 추가 가능, 관리자/일반 권한
-- **다국어**: 한국어/영어
-- **가벼운 배포**: PostgreSQL + Fastify API + Next.js 웹 + Caddy, Docker Compose 한 방 또는 Proxmox LXC 원클릭 설치
+[한국어 (Korean)](./README.ko.md)
 
 ---
 
-## 빠른 시작
+### Screenshot
+![Drop Mobile Screenshot](./docs/screenshot.png)
 
-### 1. 설치
+---
 
-**Proxmox (권장)**
+## Features
+
+- **Uploads**: Drag & drop / file picker (multiple files), direct upload from other apps using Android's native share sheet (`share_target`).
+- **Resumable Chunked Uploads**: Uploads in 8MB chunks—memory usage remains constant regardless of file size. If the upload gets interrupted (e.g. mobile background app termination), re-selecting the same file will resume from where it left off.
+- **Downloads**: Individual downloads, or select multiple files using checkboxes to download them grouped in a single zip archive.
+- **Folders**: Multi-level hierarchical folder structure, move files between folders.
+- **Trash**: Deleted files are soft-deleted first and can be restored. Automatically deleted permanently after 30 days.
+- **PWA**: Install to home screen, offline app shell caching.
+- **Auth**: No public registration. The first user registration creates the admin account. Only the admin can add subsequent accounts. Two roles: admin and general user.
+- **Localization**: English / Korean.
+- **Lightweight Deployment**: PostgreSQL + Fastify API + Next.js Web + Caddy. Deploy using Docker Compose or via Proxmox LXC one-click script.
+
+---
+
+## Quick Start
+
+### 1. Installation
+
+**Proxmox (Recommended)**
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/eigger/drop/main/proxmox/ct/drop.sh)"
 ```
 
-Debian 13 LXC에 Docker를 설치하고, 배포 파일과 무작위 시크릿이 담긴 `.env`를 `/opt/drop`에 써넣은 뒤 `drop.service` systemd 유닛으로 스택을 실행한다. 완료되면 `http://<LXC_IP>`로 접속. 이후 컨테이너 안에서 `update`로 업데이트.
+Sets up Docker on Debian 13 LXC, generates `.env` with random secrets at `/opt/drop`, and runs the stack using `drop.service` systemd unit. Once finished, connect via `http://<LXC_IP>`. Update later by running `update` inside the container.
 
 **Docker Compose**
 
 ```sh
-cp .env.example .env   # POSTGRES_PASSWORD, JWT_SECRET 설정
+cp .env.example .env   # Configure POSTGRES_PASSWORD, JWT_SECRET
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-이미지는 `ghcr.io/<owner>/drop-api` / `drop-web`에서 받아온다 — 포크한 경우 `GH_REPOSITORY_OWNER`를 맞게 설정.
+Images are fetched from `ghcr.io/<owner>/drop-api` / `drop-web`. Make sure to set `GH_REPOSITORY_OWNER` correctly if you have forked the repository.
 
-### 2. 첫 관리자 계정 만들기
+### 2. Creating the First Admin Account
 
-설치 직후 `/login`을 열면 사용자가 한 명도 없을 때만 **관리자 계정 만들기** 화면이 뜬다. 이름/이메일/비밀번호를 입력하면 바로 관리자로 로그인된다. 이후 공개 회원가입은 없고, 관리자가 **더보기 → 사용자 관리**에서만 계정을 추가할 수 있다.
+Access `/login` right after installation. If no users exist, the **Create Admin Account** screen will be shown. Enter name, email, and password to sign up and login as admin. Public registration is disabled; subsequent users can only be added by the admin via **More → Users**.
 
-### 3. 안드로이드에서 공유로 업로드
+### 3. Uploading via Share Sheet on Android
 
-PWA를 홈 화면에 설치하면 카카오톡/갤러리 등 다른 앱의 공유 시트에 drop이 바로 뜬다. iOS Safari는 Web Share Target API(받는 쪽)를 지원하지 않아서 같은 방식은 안 되고, 웹앱을 직접 열어 파일을 선택해서 올리면 된다.
+Once the PWA is installed on your home screen, Drop will appear on the Android native share sheet (e.g., from KakaoTalk, Gallery, etc.). iOS Safari does not support the Web Share Target API (recipient side) at the OS level, so iOS users need to open the web app directly and select files to upload.
 
 ---
 
-## 프로젝트 구조
+## Project Structure
 
 ```
 drop/
@@ -66,51 +71,51 @@ drop/
     api/      # Fastify + Prisma (PostgreSQL)
     web/      # Next.js App Router (PWA, ko/en)
   packages/
-    shared/   # 공유 Zod 스키마
-  scripts/    # 아이콘 생성 스크립트
+    shared/   # Shared Zod schemas
+  scripts/    # Icon generation scripts
   docker-compose.yml / docker-compose.prod.yml
   Caddyfile
-  proxmox/    # LXC 원클릭 설치
+  proxmox/    # Proxmox LXC installation
 ```
 
 ---
 
-## 로컬 개발
+## Local Development
 
 ```sh
 npm install
-cp .env.example .env       # POSTGRES_PASSWORD, JWT_SECRET 설정
+cp .env.example .env       # Configure POSTGRES_PASSWORD, JWT_SECRET
 docker compose up -d postgres
 npm run prisma:migrate
 npm run dev:api             # :8080
 npm run dev:web             # :3000
 ```
 
-`http://localhost:3000`을 열면 최초 실행 시 관리자 계정 만들기 화면이 뜬다.
+Open `http://localhost:3000` to create your initial admin account on first run.
 
-유용한 스크립트: `npm run build`, `npm run test`, `npm run lint`, `npm run prisma:generate`.
+Useful scripts: `npm run build`, `npm run test`, `npm run lint`, `npm run prisma:generate`.
 
 ---
 
-## 프로덕션 참고
+## Production Notes
 
-- 스택: PostgreSQL 16 + API + Web + Caddy(`:80`, 뒤에 리버스 프록시나 Cloudflare Tunnel로 HTTPS 종단)
-- API는 프로덕션 컴포즈에서 시작 시 `prisma migrate deploy`를 실행한다
-- 이미지: `ghcr.io/<owner>/drop-api` / `drop-web` (`latest` + semver 태그)
-- LXC 업데이트: 컨테이너 안에서 `update` (컴포즈 이미지 pull)
-- 업로드 허용 최대 용량은 `FILE_SIZE_LIMIT_MB`로 조절 (기본 10GB) — 청크 업로드라 이 값을 키워도 서버 메모리 사용량엔 영향 없음
+- Stack: PostgreSQL 16 + API + Web + Caddy (listening on `:80`; usually terminated with SSL via a reverse proxy or Cloudflare Tunnel).
+- The API runs `prisma migrate deploy` automatically upon starting in the production compose stack.
+- Images: `ghcr.io/<owner>/drop-api` / `drop-web` (`latest` + semver tags).
+- LXC Updates: Run `update` inside the container to pull the latest compose images.
+- Adjust the maximum upload limit via `FILE_SIZE_LIMIT_MB` (defaults to 10GB). Because of chunked uploads, increasing this limit does not affect server memory consumption.
 
 ---
 
 ## CI/CD
 
-| 워크플로 | 트리거 | 목적 |
+| Workflow | Trigger | Purpose |
 |---|---|---|
-| [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) | `main`에 push / PR | 설치, lint, 빌드, 테스트 |
-| [`.github/workflows/docker-release.yml`](./.github/workflows/docker-release.yml) | GitHub Release | GHCR에 이미지 push |
+| [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) | Push to `main` / PR | Setup, lint, build, test |
+| [`.github/workflows/docker-release.yml`](./.github/workflows/docker-release.yml) | GitHub Release | Push Docker images to GHCR |
 
 ---
 
 ## License
 
-MIT. [LICENSE](./LICENSE) 참고.
+MIT. See [LICENSE](./LICENSE).
