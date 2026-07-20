@@ -342,6 +342,18 @@ export async function fileRoutes(app: FastifyInstance) {
     return reply.code(204).send();
   });
 
+  app.post("/:id/qr-token", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const file = await prisma.file.findUnique({ where: { id } });
+    if (!file) return reply.code(404).send({ error: t("fileNotFound", request.locale) });
+
+    const token = app.jwt.sign(
+      { fileId: id, action: "qr-download" },
+      { expiresIn: "3m" }
+    );
+    return { token };
+  });
+
   app.get("/:id/download", async (request, reply) => {
     const { id } = request.params as { id: string };
     const file = await prisma.file.findUnique({ where: { id } });

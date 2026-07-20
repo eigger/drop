@@ -69,6 +69,14 @@ export async function authRoutes(app: FastifyInstance) {
     return { id: user.id, name: user.name, email: user.email, role: user.role };
   });
 
+  app.post("/temp-token", { preHandler: [app.authenticate] }, async (request, reply) => {
+    const token = app.jwt.sign(
+      { sub: request.user.sub, role: request.user.role },
+      { expiresIn: "10m" }
+    );
+    return { token };
+  });
+
   // 공개 회원가입은 없다 — 관리자만 계정을 만들 수 있다.
   app.post(
     "/users",

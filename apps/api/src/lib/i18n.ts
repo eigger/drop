@@ -51,6 +51,8 @@ const MESSAGES = {
 
   folderNotFound: { ko: "폴더를 찾을 수 없습니다", en: "Folder not found" },
   parentFolderNotFound: { ko: "상위 폴더를 찾을 수 없습니다", en: "Parent folder not found" },
+  tokenRequired: { ko: "토큰이 필요합니다", en: "Token is required" },
+  invalidToken: { ko: "유효하지 않거나 만료된 토큰입니다", en: "Invalid or expired token" },
 } as const;
 
 export type ApiMessageKey = keyof typeof MESSAGES;

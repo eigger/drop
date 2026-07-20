@@ -1,3 +1,5 @@
+import { existsSync, createReadStream } from "node:fs";
+import path from "node:path";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
@@ -9,11 +11,12 @@ import { authRoutes } from "./routes/auth.js";
 import { fileRoutes } from "./routes/files.js";
 import { folderRoutes } from "./routes/folders.js";
 import { shareTargetRoutes } from "./routes/shareTarget.js";
-import { localeFromRequest } from "./lib/i18n.js";
-import { FILE_SIZE_LIMIT_BYTES } from "./lib/uploads.js";
+import { localeFromRequest, t } from "./lib/i18n.js";
+import { FILE_SIZE_LIMIT_BYTES, UPLOAD_DIR } from "./lib/uploads.js";
 import { SESSION_COOKIE_NAME } from "./lib/authCookie.js";
 import { sweepStaleUploadSessions } from "./lib/uploadSessions.js";
 import { startTrashPurgeJob } from "./jobs/trashPurge.js";
+import { prisma } from "./lib/prisma.js";
 
 const app = Fastify({
   logger: true,
@@ -76,6 +79,37 @@ app.decorate("requireAdmin", async (request, reply) => {
 });
 
 app.get("/health", async () => ({ status: "ok" }));
+
+app.get("/api/files/qr-download", async (request, reply) => {
+  const query = request.query as { token?: string };
+  if (!query.token) {
+    return reply.code(400).send({ error: t("tokenRequired", request.locale) });
+  }
+
+  try {
+    const decoded = app.jwt.verify<{ fileId: string; action: string }>(query.token);
+    if (decoded.action !== "qr-download") {
+      return reply.code(403).send({ error: "Invalid token action" });
+    }
+
+    const file = await prisma.file.findUnique({ where: { id: decoded.fileId } });
+    if (!file) return reply.code(404).send({ error: t("fileNotFound", request.locale) });
+
+    const filePath = path.join(UPLOAD_DIR, file.storedName);
+    if (!existsSync(filePath)) {
+      return reply.code(404).send({ error: t("fileMissingOnDisk", request.locale) });
+    }
+
+    reply.type(file.mimeType);
+    reply.header(
+      "Content-Disposition",
+      `attachment; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
+    );
+    return createReadStream(filePath);
+  } catch (err) {
+    return reply.code(401).send({ error: t("invalidToken", request.locale) });
+  }
+});
 
 await app.register(authRoutes, { prefix: "/api/auth" });
 await app.register(fileRoutes, { prefix: "/api/files" });

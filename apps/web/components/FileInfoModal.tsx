@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { FileMeta, FileStats } from "@drop/shared";
+import QRCode from "qrcode";
 import { formatBytes } from "../lib/formatBytes";
 import { useLocale } from "../lib/i18n/locale-context";
-import { API_URL } from "../lib/api";
+import { API_URL, apiFetch } from "../lib/api";
 import { CloseIcon } from "./icons";
 
 export function FileInfoModal({
@@ -18,6 +19,35 @@ export function FileInfoModal({
 }) {
   const { t, locale } = useLocale();
   const [copied, setCopied] = useState(false);
+  const [qrToken, setQrToken] = useState<string | null>(null);
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (file) {
+      apiFetch(`/api/files/${file.id}/qr-token`, { method: "POST" })
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error("Failed to get QR token");
+        })
+        .then((data: any) => {
+          if (active) setQrToken(data.token);
+        })
+        .catch((err) => console.error(err));
+    }
+    return () => {
+      active = false;
+    };
+  }, [file]);
+
+  useEffect(() => {
+    if (qrToken && qrCanvasRef.current) {
+      const qrUrl = `${window.location.origin}/api/files/qr-download?token=${qrToken}`;
+      QRCode.toCanvas(qrCanvasRef.current, qrUrl, { width: 140, margin: 2 }, (err) => {
+        if (err) console.error("Failed to render QR Code:", err);
+      });
+    }
+  }, [qrToken]);
 
   if (!file) return null;
 
@@ -205,6 +235,25 @@ export function FileInfoModal({
               >
                 {copied ? (t("copied") || "Copied!") : (t("copy") || "Copy")}
               </button>
+            </div>
+          </div>
+
+          {/* Mobile QR Download */}
+          <div style={{ ...infoRowStyle, alignItems: "center", borderBottom: "none" }}>
+            <span style={labelStyle}>{locale === "ko" ? "모바일 다운로드 QR" : "Mobile Download QR"}</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginTop: 4 }}>
+              {qrToken ? (
+                <canvas ref={qrCanvasRef} style={{ background: "#fff", borderRadius: 8, padding: 4 }} />
+              ) : (
+                <div style={{ fontSize: 12, color: "var(--color-text-muted)", padding: "20px 0" }}>
+                  {locale === "ko" ? "QR 코드 생성 중…" : "Generating QR Code…"}
+                </div>
+              )}
+              <span style={{ fontSize: 11, color: "var(--color-text-muted)", textAlign: "center" }}>
+                {locale === "ko"
+                  ? "카메라로 스캔하면 로그인 없이 바로 다운로드됩니다. (3분간 유효)"
+                  : "Scan with camera to download without login. (Valid for 3 min)"}
+              </span>
             </div>
           </div>
         </div>
