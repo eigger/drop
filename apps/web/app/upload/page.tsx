@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { FileMeta } from "@drop/shared";
+import QRCode from "qrcode";
 import { apiFetch } from "../../lib/api";
 import { uploadFileInChunks } from "../../lib/chunkedUpload";
 import { getPendingUploads, removePendingUpload, type PendingUpload } from "../../lib/pendingUploads";
@@ -45,6 +46,63 @@ export default function UploadPage() {
   const [resumable, setResumable] = useState<ResumableUpload[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { stats, refresh: refreshStats } = useFileStats(!!user);
+
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [qrToken, setQrToken] = useState<string | null>(null);
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Handle temporary token in URL
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get("token");
+      if (token) {
+        localStorage.setItem("drop_token", token);
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        window.location.reload();
+      }
+    }
+  }, []);
+
+  // Handle clipboard paste to upload files
+  useEffect(() => {
+    function handlePaste(e: ClipboardEvent) {
+      if (activeUpload) return;
+      const files = e.clipboardData?.files;
+      if (files && files.length > 0) {
+        uploadFiles(files);
+      }
+    }
+    window.addEventListener("paste", handlePaste);
+    return () => {
+      window.removeEventListener("paste", handlePaste);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeUpload]);
+
+  // Handle drawing QR code
+  useEffect(() => {
+    if (qrModalOpen && qrToken && qrCanvasRef.current) {
+      const qrUrl = `${window.location.origin}/upload?token=${qrToken}`;
+      QRCode.toCanvas(qrCanvasRef.current, qrUrl, { width: 200, margin: 2 }, (err) => {
+        if (err) console.error("Failed to render QR Code:", err);
+      });
+    }
+  }, [qrModalOpen, qrToken]);
+
+  async function handleOpenQrModal() {
+    setError(null);
+    try {
+      const res = await apiFetch("/api/auth/temp-token", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to generate upload token");
+      const data = await res.json() as { token: string };
+      setQrToken(data.token);
+      setQrModalOpen(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
@@ -285,6 +343,31 @@ export default function UploadPage() {
         />
       </div>
 
+      {/* Mobile Upload Button */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+        <button
+          onClick={handleOpenQrModal}
+          style={{
+            flex: 1,
+            padding: "10px 16px",
+            borderRadius: 8,
+            border: "1px solid var(--color-border)",
+            background: "var(--color-surface)",
+            color: "var(--color-text)",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            transition: "all 0.2s ease",
+          }}
+        >
+          📱 {locale === "ko" ? "모바일에서 업로드 (QR)" : "Upload from Mobile (QR)"}
+        </button>
+      </div>
+
       {error && <p style={{ color: "var(--color-danger)", fontSize: 14, marginBottom: 16 }}>{error}</p>}
 
       {uploaded.length > 0 && (
@@ -311,6 +394,57 @@ export default function UploadPage() {
       />
       <FilePreviewModal file={previewing} onClose={() => setPreviewing(null)} />
       <FileInfoModal file={infoFile} stats={stats} onClose={() => setInfoFile(null)} />
+
+      {/* Mobile Upload QR Modal */}
+      {qrModalOpen && (
+        <div className="sheet-backdrop" onClick={() => setQrModalOpen(false)} style={{ alignItems: "center", padding: 16 }}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--color-surface)",
+              borderRadius: 16,
+              width: "100%",
+              maxWidth: 360,
+              padding: 24,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 16,
+              textAlign: "center",
+            }}
+          >
+            <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
+              {locale === "ko" ? "모바일에서 파일 업로드" : "Upload Files from Mobile"}
+            </h3>
+            <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: 0 }}>
+              {locale === "ko"
+                ? "스마트폰 카메라로 아래 QR 코드를 스캔하면 로그인 없이 바로 업로드할 수 있는 화면이 열립니다. (10분간 유효)"
+                : "Scan this QR code with your phone camera to open the upload page without logging in. (Valid for 10 min)"}
+            </p>
+            <canvas ref={qrCanvasRef} style={{ background: "#fff", borderRadius: 8, padding: 4 }} />
+            <button
+              onClick={() => {
+                setQrModalOpen(false);
+                refreshStats();
+                window.location.reload();
+              }}
+              style={{
+                width: "100%",
+                padding: "10px 16px",
+                borderRadius: 8,
+                border: "none",
+                background: "var(--color-primary)",
+                color: "var(--color-primary-text)",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {locale === "ko" ? "완료" : "Done"}
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

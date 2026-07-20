@@ -12,7 +12,12 @@ declare module "fastify" {
 
 declare module "@fastify/jwt" {
   interface FastifyJWT {
-    payload: { sub: string; role: "ADMIN" | "GENERAL" };
+    payload: {
+      sub?: string;
+      role?: "ADMIN" | "GENERAL";
+      fileId?: string;
+      action?: string;
+    };
     user: { sub: string; role: "ADMIN" | "GENERAL" };
   }
 }
