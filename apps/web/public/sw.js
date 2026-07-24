@@ -1,4 +1,4 @@
-const SHELL_CACHE = "drop-shell-v5";
+const SHELL_CACHE = "drop-shell-v6";
 const SHELL_ASSETS = ["/", "/login", "/files", "/upload", "/settings", "/manifest.webmanifest"];
 
 // 안드로이드 공유 시트로 들어오는 파일을 앱 화면(진행률 UI)까지 들고 가기 위해 IndexedDB에
@@ -70,8 +70,14 @@ self.addEventListener("activate", (event) => {
 // 안 되기 때문. 앱 셸(정적 페이지)만 오프라인 폴백용으로 캐시한다.
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET") return;
   const url = new URL(request.url);
+
+  if (request.method === "POST" && url.pathname === "/api/share-target") {
+    event.respondWith(handleShareTarget(event));
+    return;
+  }
+
+  if (request.method !== "GET") return;
   if (url.pathname.startsWith("/api/")) return;
 
   if (request.mode === "navigate") {

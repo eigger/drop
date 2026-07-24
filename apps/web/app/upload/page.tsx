@@ -17,6 +17,7 @@ import { FileInfoModal } from "../../components/FileInfoModal";
 import { CloseIcon } from "../../components/icons";
 import { useFileStats } from "../../lib/useFileStats";
 import { PageLoader } from "../../components/PageLoader";
+import { getSharedFiles, clearSharedFiles } from "../../lib/shareTargetDb";
 
 interface ResumableUpload extends PendingUpload {
   receivedBytes: number;
@@ -108,6 +109,25 @@ export default function UploadPage() {
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
   }, [authLoading, user, router]);
+
+  // 안드로이드 공유 시트 → sw.js가 IndexedDB에 저장해둔 파일을 꺼내 기존 업로드 진행률
+  // UI로 흘려보낸다. user가 준비되기 전엔 apiFetch가 쿠키 인증에 의존하므로 기다린다.
+  useEffect(() => {
+    if (!user) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("share-target") !== "1") return;
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    (async () => {
+      const files = await getSharedFiles();
+      await clearSharedFiles();
+      if (files.length === 0) return;
+      const dt = new DataTransfer();
+      files.forEach((f) => dt.items.add(f));
+      uploadFiles(dt.files);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // 지난 방문에서 끊긴 업로드가 있는지 서버에 물어본다 — localStorage엔 uploadId만 있고
   // 얼마나 올라갔는지는 서버가 진실 소스라, 세션이 이미 정리됐으면(24시간 경과 등) 조용히
