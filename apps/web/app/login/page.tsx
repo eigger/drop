@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { apiJson } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
 import { useLocale } from "../../lib/i18n/locale-context";
+import { PageLoader } from "../../components/PageLoader";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -48,7 +49,13 @@ export default function LoginPage() {
     }
   }
 
-  if (needsBootstrap === null) return null;
+  if (needsBootstrap === null) {
+    return (
+      <main style={{ maxWidth: 360, margin: "80px auto", padding: "0 16px" }}>
+        <PageLoader />
+      </main>
+    );
+  }
 
   return (
     <main style={{ maxWidth: 360, margin: "80px auto", padding: "0 16px" }}>

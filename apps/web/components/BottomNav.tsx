@@ -6,7 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "../lib/auth-context";
 import { useLocale } from "../lib/i18n/locale-context";
 import type { TranslationKey } from "../lib/i18n/translations";
-import { HomeIcon, FilesIcon, UploadIcon, TrashIcon, MoreIcon, SettingsIcon, UsersIcon } from "./icons";
+import { initBugReportCapture } from "../lib/bugReport";
+import { BugReportModal } from "./BugReportModal";
+import { HomeIcon, FilesIcon, UploadIcon, TrashIcon, MoreIcon, SettingsIcon, UsersIcon, BugIcon } from "./icons";
 
 // Upload가 5개 슬롯(4탭 + 더보기 버튼) 중 정확히 가운데(인덱스 2)에 오도록 순서를 맞춘다 —
 // stash의 [Home, Items, Scan(중앙), Shopping] + More와 같은 배치.
@@ -23,7 +25,12 @@ export function BottomNav() {
   const { t } = useLocale();
   const { isAdmin } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [bugReportOpen, setBugReportOpen] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    initBugReportCapture();
+  }, []);
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -103,6 +110,16 @@ export function BottomNav() {
                   <UsersIcon size={20} /> {t("navUsers")}
                 </button>
               )}
+              <button
+                type="button"
+                className="sheet-item"
+                onClick={() => {
+                  setMoreOpen(false);
+                  setBugReportOpen(true);
+                }}
+              >
+                <BugIcon size={20} /> {t("navBugReport")}
+              </button>
             </div>
 
             <div style={{ textAlign: "left", fontSize: 12, color: "var(--color-text-muted)", marginTop: 16 }}>
@@ -111,6 +128,8 @@ export function BottomNav() {
           </div>
         </div>
       )}
+
+      {bugReportOpen && <BugReportModal onClose={() => setBugReportOpen(false)} t={t} />}
     </>
   );
 }

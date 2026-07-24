@@ -14,6 +14,7 @@ import { FileInfoModal } from "../../components/FileInfoModal";
 import { SelectionToolbar } from "../../components/SelectionToolbar";
 import { FolderIcon, CloseIcon } from "../../components/icons";
 import { useFileStats } from "../../lib/useFileStats";
+import { PageLoader } from "../../components/PageLoader";
 
 const EMPTY_CONTENTS: FolderContents = { folder: null, breadcrumbs: [], subfolders: [], files: [] };
 
@@ -164,7 +165,13 @@ function BrowseFilesPageInner() {
     else selection.selectAll(contents.files.map((f) => f.id));
   }
 
-  if (authLoading || !user) return null;
+  if (authLoading || !user) {
+    return (
+      <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>
+        <PageLoader />
+      </main>
+    );
+  }
 
   return (
     <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>

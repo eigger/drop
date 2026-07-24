@@ -9,6 +9,7 @@ import { useFiles } from "../../lib/useFiles";
 import { useLocale } from "../../lib/i18n/locale-context";
 import { TrashFileRow } from "../../components/TrashFileRow";
 import { FilePreviewModal } from "../../components/FilePreviewModal";
+import { PageLoader } from "../../components/PageLoader";
 
 export default function TrashPage() {
   const router = useRouter();
@@ -21,7 +22,13 @@ export default function TrashPage() {
     if (!authLoading && !user) router.replace("/login");
   }, [authLoading, user, router]);
 
-  if (authLoading || !user) return null;
+  if (authLoading || !user) {
+    return (
+      <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>
+        <PageLoader />
+      </main>
+    );
+  }
 
   async function handleEmptyTrash() {
     if (!confirm(t("emptyTrashConfirm"))) return;

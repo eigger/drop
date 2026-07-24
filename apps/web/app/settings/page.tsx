@@ -6,6 +6,7 @@ import { useAuth } from "../../lib/auth-context";
 import { useLocale } from "../../lib/i18n/locale-context";
 import { apiJson, ApiError } from "../../lib/api";
 import { Section, buttonStyle, inputStyle, toggleStyle, activeToggleStyle } from "../../components/SettingsUI";
+import { PageLoader } from "../../components/PageLoader";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -22,7 +23,13 @@ export default function SettingsPage() {
     if (!authLoading && !user) router.replace("/login");
   }, [authLoading, user, router]);
 
-  if (authLoading || !user) return null;
+  if (authLoading || !user) {
+    return (
+      <main style={{ maxWidth: 480, margin: "0 auto", padding: 16 }}>
+        <PageLoader />
+      </main>
+    );
+  }
 
   async function handleChangePassword(e: FormEvent) {
     e.preventDefault();

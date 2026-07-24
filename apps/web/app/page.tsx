@@ -16,6 +16,7 @@ import { FilePreviewModal } from "../components/FilePreviewModal";
 import { FileInfoModal } from "../components/FileInfoModal";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { StorageSummary } from "../components/StorageSummary";
+import { PageLoader } from "../components/PageLoader";
 
 const RECENT_LIMIT = 5;
 
@@ -34,7 +35,13 @@ export default function HomePage() {
     if (!authLoading && !user) router.replace("/login");
   }, [authLoading, user, router]);
 
-  if (authLoading || !user) return null;
+  if (authLoading || !user) {
+    return (
+      <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>
+        <PageLoader />
+      </main>
+    );
+  }
 
   const recent = files.slice(0, RECENT_LIMIT);
 

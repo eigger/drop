@@ -7,6 +7,7 @@ import { useAuth } from "../../lib/auth-context";
 import { useLocale } from "../../lib/i18n/locale-context";
 import type { User } from "../../lib/types";
 import { Section, buttonStyle, inputStyle } from "../../components/SettingsUI";
+import { PageLoader } from "../../components/PageLoader";
 
 export default function UsersPage() {
   const router = useRouter();
@@ -65,7 +66,13 @@ export default function UsersPage() {
     }
   }
 
-  if (authLoading || !user || !isAdmin) return null;
+  if (authLoading || !user || !isAdmin) {
+    return (
+      <main style={{ maxWidth: 480, margin: "0 auto", padding: 16 }}>
+        <PageLoader />
+      </main>
+    );
+  }
 
   return (
     <main style={{ maxWidth: 480, margin: "0 auto", padding: 16 }}>
