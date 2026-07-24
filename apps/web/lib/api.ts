@@ -1,3 +1,5 @@
+import { recordFailedRequest } from "./bugReport";
+
 function resolveApiUrl(): string {
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
   // 배포(Caddy)에서는 same-origin(/api) 호출이 맞고, 로컬 개발에서는 8080 API를 기본값으로 쓴다.
@@ -34,7 +36,12 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   if (locale) headers.set("X-Locale", locale);
   // 로그인 응답의 Set-Cookie(공유 시트 인증용 drop_session)가 저장되려면 크로스오리진 개발
   // 환경에서도 credentials가 필요하다 — 배포(Caddy, 동일 오리진)에서는 없어도 무해하다.
-  return fetch(`${API_URL}${path}`, { ...init, headers, cache: "no-store", credentials: "include" });
+  const res = await fetch(`${API_URL}${path}`, { ...init, headers, cache: "no-store", credentials: "include" });
+  // 버그 제보 시 자동 첨부되는 최근 실패 요청 목록 — 경로/상태코드만 남기고 요청·응답 본문은 담지 않는다.
+  if (!res.ok) {
+    recordFailedRequest(init.method ?? "GET", path, res.status);
+  }
+  return res;
 }
 
 function requestFailedMessage(status: number): string {

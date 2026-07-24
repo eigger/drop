@@ -179,6 +179,21 @@ export function OtherTypeIcon({ size = 18 }: { size?: number }) {
   );
 }
 
+export function BugIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg {...iconProps(size)}>
+      <rect x="7" y="8" width="10" height="10" rx="5" />
+      <line x1="12" y1="8" x2="12" y2="4" />
+      <line x1="4" y1="10" x2="7" y2="12" />
+      <line x1="4" y1="18" x2="7" y2="16" />
+      <line x1="20" y1="10" x2="17" y2="12" />
+      <line x1="20" y1="18" x2="17" y2="16" />
+      <line x1="9" y1="4" x2="10.5" y2="6" />
+      <line x1="15" y1="4" x2="13.5" y2="6" />
+    </svg>
+  );
+}
+
 export function InfoIcon({ size = 16 }: { size?: number }) {
   return (
     <svg {...iconProps(size)}>

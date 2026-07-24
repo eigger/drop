@@ -16,6 +16,7 @@ import { FilePreviewModal } from "../../components/FilePreviewModal";
 import { FileInfoModal } from "../../components/FileInfoModal";
 import { CloseIcon } from "../../components/icons";
 import { useFileStats } from "../../lib/useFileStats";
+import { PageLoader } from "../../components/PageLoader";
 
 interface ResumableUpload extends PendingUpload {
   receivedBytes: number;
@@ -204,7 +205,13 @@ export default function UploadPage() {
     setResumable((prev) => prev.filter((r) => r.uploadId !== uploadId));
   }
 
-  if (authLoading || !user) return null;
+  if (authLoading || !user) {
+    return (
+      <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>
+        <PageLoader />
+      </main>
+    );
+  }
 
   return (
     <main style={{ maxWidth: 640, margin: "0 auto", padding: 16 }}>

@@ -1,5 +1,6 @@
 export const translations = {
   appName: { ko: "Drop", en: "Drop" },
+  loading: { ko: "불러오는 중...", en: "Loading..." },
   loginTitle: { ko: "로그인", en: "Log in" },
   bootstrapTitle: { ko: "관리자 계정 만들기", en: "Create admin account" },
   name: { ko: "이름", en: "Name" },
@@ -25,6 +26,19 @@ export const translations = {
   navSettings: { ko: "설정", en: "Settings" },
   navUsers: { ko: "사용자 관리", en: "Users" },
   menuGroupAccount: { ko: "계정", en: "Account" },
+  navBugReport: { ko: "버그 제보", en: "Report a Bug" },
+  bugReportHint: {
+    ko: "제목/내용과 함께 앱 버전, 현재 화면, 최근 오류 로그가 자동으로 첨부됩니다. GitHub 이슈 작성 화면에서 내용을 검토·수정한 뒤 직접 제출하시면 됩니다.",
+    en: "Along with your title/description, the app version, current screen, and recent error logs are attached automatically. You'll get a chance to review and edit everything on the GitHub issue page before submitting it yourself.",
+  },
+  bugReportTitleLabel: { ko: "제목", en: "Title" },
+  bugReportTitlePlaceholder: { ko: "무슨 문제가 있었나요?", en: "What went wrong?" },
+  bugReportDescLabel: { ko: "자세한 내용", en: "Description" },
+  bugReportDescPlaceholder: {
+    ko: "어떤 상황이었는지, 어떻게 재현되는지 적어주세요.",
+    en: "Describe what happened and how to reproduce it.",
+  },
+  bugReportSubmit: { ko: "이슈 작성", en: "Create Issue" },
 
   trashTitle: { ko: "휴지통", en: "Trash" },
   trashHint: { ko: "30일이 지나면 자동으로 영구 삭제됩니다", en: "Automatically deleted forever after 30 days" },
