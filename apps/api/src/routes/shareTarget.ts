@@ -34,6 +34,6 @@ export async function shareTargetRoutes(app: FastifyInstance) {
 
     // 성공/실패와 무관하게 항상 파일 목록 화면으로 돌려보낸다 — 실패했더라도 사용자가
     // 깨진 에러 페이지에 갇히는 것보다는 앱으로 돌아가서 결과를 직접 확인하는 편이 낫다.
-    return reply.redirect(303, "/");
+    return reply.redirect("/", 303);
   });
 }
