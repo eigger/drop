@@ -5,10 +5,13 @@ const SHELL_CACHE = "drop-shell-v7";
 const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/+$/, "");
 const url = (path) => `${BASE_PATH}${path}`;
 
-/** 프리픽스를 뗀, 앱 기준 경로. 라우트 판별은 이 값으로 한다. */
+/** 프리픽스를 뗀, 앱 기준 경로. lib/base-path.ts `stripBasePath`와 같은 규칙. */
 function appPath(requestUrl) {
   const { pathname } = new URL(requestUrl);
-  return BASE_PATH && pathname.startsWith(BASE_PATH) ? pathname.slice(BASE_PATH.length) || "/" : pathname;
+  if (!BASE_PATH) return pathname;
+  if (pathname === BASE_PATH) return "/";
+  if (pathname.startsWith(`${BASE_PATH}/`)) return pathname.slice(BASE_PATH.length) || "/";
+  return pathname;
 }
 
 // 주의: 뒤 슬래시가 있어야 한다. trailingSlash 때문에 슬래시 없는 주소는 308이 되고,

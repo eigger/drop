@@ -12,3 +12,15 @@
 		reverse_proxy web:3000
 	}
 }
+
+# 기본 설치는 오리진 루트. BASE_PATH=/drop 처럼 서브패스에 붙이면 웹 클라이언트가
+# /drop/api/... 를 치므로, 프록시가 그 요청에서 /drop 만 벗긴 뒤 API로 넘기고,
+# 웹(Next) 요청은 프리픽스를 그대로 남겨야 한다. 아래를 루트 handle 대신 쓴다.
+#
+# handle /drop/api* {
+# 	uri strip_prefix /drop
+# 	reverse_proxy api:8080
+# }
+# handle /drop* {
+# 	reverse_proxy web:3000
+# }

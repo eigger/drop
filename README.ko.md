@@ -98,6 +98,8 @@ npm run dev:web             # :3000
 - 이미지: `ghcr.io/<owner>/drop-api` / `drop-web` (`latest` + semver 태그)
 - LXC 업데이트: 컨테이너 안에서 `update` (컴포즈 이미지 pull)
 - 업로드 허용 최대 용량은 `FILE_SIZE_LIMIT_MB`로 조절 (기본 10GB) — 청크 업로드라 이 값을 키워도 서버 메모리 사용량엔 영향 없음
+- 서브패스 배포: 웹 컨테이너에 `BASE_PATH`를 넣으면 (예: `BASE_PATH=/drop`) 그 프리픽스 아래로 응답한다. 이미지는 플레이스홀더로 빌드되고 기동 시 `apps/web/docker-entrypoint.sh`가 치환하므로, 같은 이미지로 오리진 루트·리버스 프록시 서브패스·Home Assistant Ingress(설치본마다 경로가 달라 빌드 때 알 수 없음)를 커버한다. 비워두면 지금까지처럼 루트.
+- 프록시도 그 프리픽스에 맞춰야 한다. 웹 클라이언트는 `{BASE_PATH}/api/...`를 치지만 API는 여전히 `/api`에서 듣는다. 기본 Caddyfile은 오리진 루트의 `/api`만 연결하므로, 서브패스에서는 API 요청에서 프리픽스를 벗기고 웹 요청은 남겨야 한다 (`Caddyfile` 주석 예시). Home Assistant Ingress는 애드온 nginx가 이 작업을 한다. `BASE_PATH`를 비우면 기존 루트 컴포즈 그대로다.
 
 ---
 

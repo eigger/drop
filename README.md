@@ -99,6 +99,7 @@ Useful scripts: `npm run build`, `npm run test`, `npm run lint`, `npm run prisma
 - LXC Updates: Run `update` inside the container to pull the latest compose images.
 - Adjust the maximum upload limit via `FILE_SIZE_LIMIT_MB` (defaults to 10GB). Because of chunked uploads, increasing this limit does not affect server memory consumption.
 - Serving under a subpath: set `BASE_PATH` on the web container (for example `BASE_PATH=/drop`) and the app answers under that prefix. The image is built with a placeholder that `apps/web/docker-entrypoint.sh` rewrites at start-up, so one image serves the origin root, a reverse-proxy subpath, or Home Assistant Ingress — whose prefix is assigned per installation and cannot be known at build time. Leave it unset for root deployments.
+- The reverse proxy has to match that prefix. The web client calls `{BASE_PATH}/api/...`, but the API still listens at `/api`. The bundled Caddyfile only routes origin-root `/api`; for a subpath, strip the prefix on API requests and leave it on for the web app (see the commented example in `Caddyfile`). Home Assistant Ingress does this in the add-on's nginx. Unset `BASE_PATH` keeps today's root compose unchanged.
 
 ---
 
