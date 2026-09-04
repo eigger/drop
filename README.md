@@ -98,6 +98,7 @@ Useful scripts: `npm run build`, `npm run test`, `npm run lint`, `npm run prisma
 - Images: `ghcr.io/<owner>/drop-api` / `drop-web` (`latest` + semver tags).
 - LXC Updates: Run `update` inside the container to pull the latest compose images.
 - Adjust the maximum upload limit via `FILE_SIZE_LIMIT_MB` (defaults to 10GB). Because of chunked uploads, increasing this limit does not affect server memory consumption.
+- Serving under a subpath: set `BASE_PATH` on the web container (for example `BASE_PATH=/drop`) and the app answers under that prefix. The image is built with a placeholder that `apps/web/docker-entrypoint.sh` rewrites at start-up, so one image serves the origin root, a reverse-proxy subpath, or Home Assistant Ingress — whose prefix is assigned per installation and cannot be known at build time. Leave it unset for root deployments.
 
 ---
 

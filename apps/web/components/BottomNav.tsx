@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+
+import { routePath } from "../lib/base-path";
 import { useAuth } from "../lib/auth-context";
 import { useLocale } from "../lib/i18n/locale-context";
 import type { TranslationKey } from "../lib/i18n/translations";
@@ -20,7 +22,7 @@ const TABS: { href: string; labelKey: TranslationKey; Icon: (props: { size?: num
 ];
 
 export function BottomNav() {
-  const pathname = usePathname();
+  const pathname = routePath(usePathname());
   const router = useRouter();
   const { t } = useLocale();
   const { isAdmin } = useAuth();

@@ -6,10 +6,11 @@ import { LocaleProvider } from "../lib/i18n/locale-context";
 import { RegisterServiceWorker } from "./register-sw";
 import { BottomNav } from "../components/BottomNav";
 
+// manifest는 app/manifest.ts가 라우트로 그리고 Next가 <link rel="manifest">까지 붙여준다 —
+// 여기에 경로를 다시 적으면 basePath가 빠진 주소로 덮어써진다.
 export const metadata: Metadata = {
   title: "Drop",
   description: "모바일 ↔ PC 파일 중계",
-  manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Drop" },
 };
 
