@@ -35,9 +35,9 @@
     "@types/node-cron": "^3.0.11",
     "eslint": "^9.39.5",
     "prisma": "^5.22.0",
-    "tsx": "^4.23.13",
+    "tsx": "^4.23.15",
     "typescript": "^5.5.4",
-    "typescript-eslint": "^8.70.0",
+    "typescript-eslint": "^8.70.1",
     "vitest": "^4.1.11"
   }
 }
