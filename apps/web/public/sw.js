@@ -1,5 +1,22 @@
-const SHELL_CACHE = "drop-shell-v6";
-const SHELL_ASSETS = ["/", "/login", "/files", "/upload", "/settings", "/manifest.webmanifest"];
+const SHELL_CACHE = "drop-shell-v7";
+
+// public/ 파일은 빌드 시 basePath가 붙지 않는다. 대신 서비스워커는 자기 스코프를 알고 있으므로
+// 거기서 배포 프리픽스를 그대로 얻는다 — 루트 배포면 "", /drop 아래면 "/drop".
+const BASE_PATH = new URL(self.registration.scope).pathname.replace(/\/+$/, "");
+const url = (path) => `${BASE_PATH}${path}`;
+
+/** 프리픽스를 뗀, 앱 기준 경로. lib/base-path.ts `stripBasePath`와 같은 규칙. */
+function appPath(requestUrl) {
+  const { pathname } = new URL(requestUrl);
+  if (!BASE_PATH) return pathname;
+  if (pathname === BASE_PATH) return "/";
+  if (pathname.startsWith(`${BASE_PATH}/`)) return pathname.slice(BASE_PATH.length) || "/";
+  return pathname;
+}
+
+// 주의: 뒤 슬래시가 있어야 한다. trailingSlash 때문에 슬래시 없는 주소는 308이 되고,
+// cache.addAll은 리다이렉트된 응답을 저장하지 못해 목록 전체가 통째로 실패한다.
+const SHELL_ASSETS = ["/", "/login/", "/files/", "/upload/", "/settings/", "/manifest.webmanifest"].map(url);
 
 // 안드로이드 공유 시트로 들어오는 파일을 앱 화면(진행률 UI)까지 들고 가기 위해 IndexedDB에
 // 잠깐 보관한다. lib/shareTargetDb.ts가 같은 DB/스토어/키로 읽어간다 — 이름을 바꾸면 함께 바꿔야 한다.
@@ -40,11 +57,11 @@ async function handleShareTarget(event) {
     const files = formData.getAll("files").filter((f) => f instanceof File);
 
     if (files.length === 0) {
-      return Response.redirect("/upload", 303);
+      return Response.redirect(url("/upload/"), 303);
     }
 
     await saveSharedFiles(files);
-    return Response.redirect("/upload?share-target=1", 303);
+    return Response.redirect(url("/upload/?share-target=1"), 303);
   } catch (err) {
     return fetch(fallbackRequest);
   }
@@ -70,19 +87,19 @@ self.addEventListener("activate", (event) => {
 // 안 되기 때문. 앱 셸(정적 페이지)만 오프라인 폴백용으로 캐시한다.
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  const url = new URL(request.url);
+  const path = appPath(request.url);
 
-  if (request.method === "POST" && url.pathname === "/api/share-target") {
+  if (request.method === "POST" && path === "/api/share-target") {
     event.respondWith(handleShareTarget(event));
     return;
   }
 
   if (request.method !== "GET") return;
-  if (url.pathname.startsWith("/api/")) return;
+  if (path.startsWith("/api/")) return;
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match(request).then((res) => res || caches.match("/"))),
+      fetch(request).catch(() => caches.match(request).then((res) => res || caches.match(url("/")))),
     );
     return;
   }
