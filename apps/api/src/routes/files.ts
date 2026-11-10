@@ -3,7 +3,7 @@ import { existsSync, createReadStream, createWriteStream, statfsSync } from "nod
 import { mkdir, stat, unlink, appendFile, rename } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import path from "node:path";
-import archiver from "archiver";
+import { ZipArchive } from "archiver";
 import type { FastifyInstance } from "fastify";
 import type { MultipartFile } from "@fastify/multipart";
 import {
@@ -202,7 +202,7 @@ export async function fileRoutes(app: FastifyInstance) {
     reply.type("application/zip");
     reply.header("Content-Disposition", 'attachment; filename="drop-files.zip"');
 
-    const archive = archiver("zip", { zlib: { level: 6 } });
+    const archive = new ZipArchive({ zlib: { level: 6 } });
     const usedNames = new Set<string>();
     for (const file of files) {
       const filePath = path.join(UPLOAD_DIR, file.storedName);

@@ -16,5 +16,13 @@
     "generate:icons": "node scripts/generate-icons.mjs",
     "test": "npm run build:shared && npm run test -w apps/api && npm run test -w apps/web",
     "lint": "npm run lint -w apps/api && npm run lint -w apps/web"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.1"
+    },
+    "readdir-glob": {
+      "minimatch": "^11.0.1"
+    }
   }
 }
